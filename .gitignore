@@ -1,0 +1,14 @@
+node_modules
+.next
+dist
+build
+*.log
+.env.local
+.env.*.local
+.DS_Store
+.vscode
+.idea
+*.swp
+.coverage
+__pycache__
+.vercel
