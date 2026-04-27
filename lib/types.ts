@@ -21,14 +21,28 @@ export interface ExtractedData {
   clinicalSections: ClinicalSections
 }
 
+export interface SubmitResult {
+  success: boolean
+  consistent: boolean
+  observations?: string
+  consultNumber?: string
+  patientId?: string
+  summarized?: boolean
+  summarizedSections?: ClinicalSections
+  message?: string
+}
+
 export interface RecordingState {
   isRecording: boolean
   isPaused: boolean
+  isFinished: boolean
   liveTranscript: string
   fullTranscript: string
   extractedData: ExtractedData | null
   error: string | null
   isProcessing: boolean
   isExtracting: boolean
+  isSubmitting: boolean
+  submitResult: SubmitResult | null
   elapsedSeconds: number
 }

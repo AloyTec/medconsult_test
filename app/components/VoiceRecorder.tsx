@@ -6,7 +6,7 @@ import { TranscriptDisplay } from './TranscriptDisplay'
 import { DataExtraction } from './DataExtraction'
 
 export function VoiceRecorder() {
-  const { state, start, stop, pause, resume, clear } = useVoiceRecording()
+  const { state, start, stop, pause, resume, clear, submit } = useVoiceRecording()
 
   const formatTime = (seconds: number): string => {
     const minutes = Math.floor(seconds / 60)
@@ -83,6 +83,7 @@ export function VoiceRecorder() {
         onPause={pause}
         onResume={resume}
         onClear={clear}
+        onSubmit={submit}
       />
 
       {/* Error display */}
@@ -99,6 +100,46 @@ export function VoiceRecorder() {
         liveTranscript={state.liveTranscript}
         fullTranscript={state.fullTranscript}
       />
+
+      {/* Submit result */}
+      {state.submitResult && (
+        <div
+          className={`rounded-lg p-4 border ${
+            state.submitResult.success
+              ? 'bg-green-50 border-green-200'
+              : 'bg-yellow-50 border-yellow-200'
+          }`}
+        >
+          <h3
+            className={`font-semibold mb-2 ${
+              state.submitResult.success ? 'text-green-900' : 'text-yellow-900'
+            }`}
+          >
+            {state.submitResult.success
+              ? `Consulta guardada (#${state.submitResult.consultNumber})`
+              : 'Inconsistencias detectadas'}
+          </h3>
+          {state.submitResult.observations && (
+            <p
+              className={`text-sm ${
+                state.submitResult.success ? 'text-green-800' : 'text-yellow-800'
+              }`}
+            >
+              {state.submitResult.observations}
+            </p>
+          )}
+          {state.submitResult.summarized && state.submitResult.summarizedSections && (
+            <details className="mt-3 rounded-lg border border-green-300">
+              <summary className="cursor-pointer p-3 font-semibold text-green-700 hover:bg-green-50 text-sm">
+                Ver secciones resumidas por IA
+              </summary>
+              <pre className="overflow-x-auto bg-gray-900 text-gray-100 p-4 text-xs">
+                {JSON.stringify(state.submitResult.summarizedSections, null, 2)}
+              </pre>
+            </details>
+          )}
+        </div>
+      )}
 
       {/* Data extraction display */}
       <DataExtraction extractedData={state.extractedData} isExtracting={state.isExtracting} />
