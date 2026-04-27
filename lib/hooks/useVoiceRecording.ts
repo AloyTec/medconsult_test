@@ -38,23 +38,35 @@ export function useVoiceRecording() {
 
       openaiRef.current = new OpenAIRealtimeClient()
 
+      console.log('🔍 [DEBUG] useVoiceRecording: Connecting to OpenAI...')
       const mediaStream = await openaiRef.current.connect(
+        // onTranscript — fires when a complete turn is transcribed
         (text) => {
           setState((prev) => ({
             ...prev,
-            liveTranscript: text,
+            liveTranscript: '',
             fullTranscript: (prev.fullTranscript + ' ' + text).trim(),
           }))
           extractionRef.current?.addTranscript(text)
         },
+        // onError
         (error) => {
+          console.error('🔍 [DEBUG] useVoiceRecording: onError callback fired:', error)
           setState((prev) => ({
             ...prev,
             error,
             isRecording: false,
           }))
+        },
+        // onTranscriptDelta — fires word-by-word for streaming display
+        (delta) => {
+          setState((prev) => ({
+            ...prev,
+            liveTranscript: prev.liveTranscript + delta,
+          }))
         }
       )
+      console.log('🔍 [DEBUG] useVoiceRecording: Connected, got mediaStream with', mediaStream.getTracks().length, 'tracks')
 
       mediaStreamRef.current = mediaStream
 

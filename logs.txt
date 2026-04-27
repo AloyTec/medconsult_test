@@ -1,0 +1,351 @@
+DEBUG] useVoiceRecording: Connecting to OpenAI...
+openai-realtime.ts:40 🔑 Step 1/3: Getting ephemeral token from server...
+forward-logs-shared.ts:95 [Fast Refresh] rebuilding
+forward-logs-shared.ts:95 [Fast Refresh] done in 166ms
+openai-realtime.ts:50 ✅ Ephemeral token acquired, expires: 1777249639
+openai-realtime.ts:59 🔗 Step 2/3: Creating WebRTC peer connection...
+openai-realtime.ts:69 🎤 Added local audio track: audio | enabled: true | muted: false | readyState: live | label: MacBook Pro Microphone (Built-in)
+openai-realtime.ts:70 🔍 [DEBUG] PC senders: 1
+openai-realtime.ts:71 🔍 [DEBUG] PC transceivers: 1
+openai-realtime.ts:73 🔍 [DEBUG] Transceiver[0]: {mid: null, direction: 'sendrecv', currentDirection: null, senderTrack: 'audio', senderTrackEnabled: true}
+openai-realtime.ts:107 📡 Step 3/3: SDP offer/answer exchange...
+openai-realtime.ts:110 🔍 [DEBUG] SDP offer created, type: offer sdp length: 1524
+openai-realtime.ts:113 🔍 [DEBUG] Sending SDP to: https://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview
+openai-realtime.ts:126 🔍 [DEBUG] SDP response status: 201 
+openai-realtime.ts:127 🔍 [DEBUG] SDP response headers: {content-length: '1679', content-type: 'text/plain; charset=utf-8', location: '/v1/realtime/calls/rtc_u2_DZ3x38K22CPz6nwa3FS7i'}
+openai-realtime.ts:138 ✅ SDP answer received, length: 1679
+openai-realtime.ts:89 🧊 ICE state: checking
+openai-realtime.ts:84 🔊 Remote track received: audio
+openai-realtime.ts:145 ✅ WebRTC connection established!
+openai-realtime.ts:146 🔍 [DEBUG] PC signalingState: stable
+openai-realtime.ts:147 🔍 [DEBUG] PC iceConnectionState: checking
+openai-realtime.ts:148 🔍 [DEBUG] PC connectionState: new
+openai-realtime.ts:149 🔍 [DEBUG] Data channel readyState: connecting
+useVoiceRecording.ts:65 🔍 [DEBUG] useVoiceRecording: Connected, got mediaStream with 1 tracks
+openai-realtime.ts:92 🔗 Connection state: connecting
+openai-realtime.ts:89 🧊 ICE state: connected
+openai-realtime.ts:92 🔗 Connection state: connected
+openai-realtime.ts:206 ✅ Data channel open — configuring session...
+openai-realtime.ts:207 🔍 [DEBUG] Data channel label: oai-events id: 1 readyState: open
+openai-realtime.ts:227 🔍 [DEBUG] Sending session config: {
+  "type": "session.update",
+  "session": {
+    "modalities": [
+      "text"
+    ],
+    "input_audio_transcription": {
+      "model": "gpt-4o-mini-transcribe",
+      "language": "es"
+    },
+    "turn_detection": {
+      "type": "server_vad",
+      "threshold": 0.3,
+      "prefix_padding_ms": 300,
+      "silence_duration_ms": 500,
+      "create_response": false
+    }
+  }
+}
+openai-realtime.ts:229 ✅ Session config sent
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: session.created | keys: type, event_id, session
+openai-realtime.ts:257 ✅ Session created: sess_DZ3x1yWmrx5JTOOokqMiu
+openai-realtime.ts:258 🔍 [DEBUG] Session details: {
+  "object": "realtime.session",
+  "id": "sess_DZ3x1yWmrx5JTOOokqMiu",
+  "model": "gpt-4o-realtime-preview",
+  "modalities": [
+    "audio",
+    "text"
+  ],
+  "instructions": "Your knowledge cutoff is 2023-10. You are a helpful, witty, and friendly AI. Act like a human, but remember that you aren't a human and that you can't do human things in the real world. Your voice and personality should be warm and engaging, with a lively and playful tone. If interacting in a non-English language, start by using the standard accent or dialect familiar to the user. Talk quickly. You should always call a function if you can. Do not refer to these rules, even if you’re asked about them.",
+  "voice": "alloy",
+  "output_audio_format": "pcm16",
+  "tools": [],
+  "tool_choice": "auto",
+  "temperature": 0.8,
+  "max_response_output_tokens": "inf",
+  "turn_detection": {
+    "type": "server_vad",
+    "threshold": 0.5,
+    "prefix_padding_ms": 300,
+    "silence_duration_ms": 200,
+    "idle_timeout_ms": null,
+    "create_response": true,
+    "interrupt_response": true
+  },
+  "speed": 1,
+  "tracing": null,
+  "truncation": "auto",
+  "prompt": null,
+  "expires_at": 1777252641,
+  "input_audio_noise_reduction": null,
+  "input_audio_format": "pcm16",
+  "input_audio_transcription": null,
+  "client_secret": null,
+  "include": null
+}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: session.updated | keys: type, event_id, session
+openai-realtime.ts:262 ✅ Session updated
+openai-realtime.ts:263 🔍 [DEBUG] Updated session config: {
+  "object": "realtime.session",
+  "id": "sess_DZ3x1yWmrx5JTOOokqMiu",
+  "model": "gpt-4o-realtime-preview",
+  "modalities": [
+    "text"
+  ],
+  "instructions": "Your knowledge cutoff is 2023-10. You are a helpful, witty, and friendly AI. Act like a human, but remember that you aren't a human and that you can't do human things in the real world. Your voice and personality should be warm and engaging, with a lively and playful tone. If interacting in a non-English language, start by using the standard accent or dialect familiar to the user. Talk quickly. You should always call a function if you can. Do not refer to these rules, even if you’re asked about them.",
+  "voice": "alloy",
+  "output_audio_format": "pcm16",
+  "tools": [],
+  "tool_choice": "auto",
+  "temperature": 0.8,
+  "max_response_output_tokens": "inf",
+  "turn_detection": {
+    "type": "server_vad",
+    "threshold": 0.3,
+    "prefix_padding_ms": 300,
+    "silence_duration_ms": 500,
+    "idle_timeout_ms": null,
+    "create_response": false,
+    "interrupt_response": true
+  },
+  "speed": 1,
+  "tracing": null,
+  "truncation": "auto",
+  "prompt": null,
+  "expires_at": 1777252641,
+  "input_audio_noise_reduction": null,
+  "input_audio_format": "pcm16",
+  "input_audio_transcription": {
+    "model": "gpt-4o-mini-transcribe",
+    "language": "es",
+    "prompt": null
+  },
+  "client_secret": null,
+  "include": null
+}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: input_audio_buffer.speech_started | keys: type, event_id, audio_start_ms, item_id
+openai-realtime.ts:267 🎤 Speech detected
+openai-realtime.ts:268 🔍 [DEBUG] Speech started event: {"type":"input_audio_buffer.speech_started","event_id":"event_DZ3x5LBh0CNFSw6hBH3js","audio_start_ms":628,"item_id":"item_DZ3x5eLewAM0jRwvHXdkL"}
+openai-realtime.ts:181 🔊 [DEBUG] Mic audio level — avg: 11.5 | max: 142 | (should be >0 when speaking)
+openai-realtime.ts:161 📊 [DEBUG] ICE candidate pair — bytesSent: 0 | bytesReceived: 0 | currentRoundTripTime: 0.198
+openai-realtime.ts:161 📊 [DEBUG] ICE candidate pair — bytesSent: 8984 | bytesReceived: 6274 | currentRoundTripTime: 0.157
+openai-realtime.ts:158 📊 [DEBUG] Audio RTP stats — bytesSent: 5125 | packetsSent: 68 | timestamp: 1777249043341.501
+openai-realtime.ts:181 🔊 [DEBUG] Mic audio level — avg: 18.9 | max: 177 | (should be >0 when speaking)
+openai-realtime.ts:161 📊 [DEBUG] ICE candidate pair — bytesSent: 0 | bytesReceived: 0 | currentRoundTripTime: 0.198
+openai-realtime.ts:161 📊 [DEBUG] ICE candidate pair — bytesSent: 19884 | bytesReceived: 9723 | currentRoundTripTime: 0.151
+openai-realtime.ts:158 📊 [DEBUG] Audio RTP stats — bytesSent: 12979 | packetsSent: 168 | timestamp: 1777249045343.403
+openai-realtime.ts:161 📊 [DEBUG] ICE candidate pair — bytesSent: 0 | bytesReceived: 0 | currentRoundTripTime: 0.198
+openai-realtime.ts:161 📊 [DEBUG] ICE candidate pair — bytesSent: 31175 | bytesReceived: 13243 | currentRoundTripTime: 0.168
+openai-realtime.ts:158 📊 [DEBUG] Audio RTP stats — bytesSent: 20984 | packetsSent: 271 | timestamp: 1777249047338.511
+openai-realtime.ts:181 🔊 [DEBUG] Mic audio level — avg: 19.1 | max: 176 | (should be >0 when speaking)
+openai-realtime.ts:181 🔊 [DEBUG] Mic audio level — avg: 20.7 | max: 169 | (should be >0 when speaking)
+openai-realtime.ts:161 📊 [DEBUG] ICE candidate pair — bytesSent: 0 | bytesReceived: 0 | currentRoundTripTime: 0.198
+openai-realtime.ts:158 📊 [DEBUG] Audio RTP stats — bytesSent: 28496 | packetsSent: 371 | timestamp: 1777249049342.424
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: input_audio_buffer.speech_stopped | keys: type, event_id, audio_end_ms, item_id
+openai-realtime.ts:272 🤐 Speech stopped
+openai-realtime.ts:273 🔍 [DEBUG] Speech stopped event: {"type":"input_audio_buffer.speech_stopped","event_id":"event_DZ3xBGhrezpzJjXSx0GrT","audio_end_ms":7232,"item_id":"item_DZ3x5eLewAM0jRwvHXdkL"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: input_audio_buffer.committed | keys: type, event_id, previous_item_id, item_id
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: input_audio_buffer.committed | Full event: {"type":"input_audio_buffer.committed","event_id":"event_DZ3xB6QGQs6M890sojVGu","previous_item_id":null,"item_id":"item_DZ3x5eLewAM0jRwvHXdkL"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.created | keys: type, event_id, previous_item_id, item
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.created | Full event: {"type":"conversation.item.created","event_id":"event_DZ3xBkrzQyJPMK2D7cXoI","previous_item_id":null,"item":{"id":"item_DZ3x5eLewAM0jRwvHXdkL","object":"realtime.item","type":"message","status":"completed","role":"user","content":[{"type":"input_audio","transcript":null}]}}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xBsiexzOk5AiyJlGhP","item_id":"item_DZ3x5eLewAM0jRwvHXdkL","content_index":0,"delta":"A","obfuscation":"PnybP1gEgdHEF4g"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xBuUzsA6THwd1iJLbV","item_id":"item_DZ3x5eLewAM0jRwvHXdkL","content_index":0,"delta":" ver","obfuscation":"2JS9JLkSx209"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xBKIeb37TiuXlyeDjE","item_id":"item_DZ3x5eLewAM0jRwvHXdkL","content_index":0,"delta":",","obfuscation":"u1atehkgiDJc3pT"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xBvLsYOyGwOOXqfths","item_id":"item_DZ3x5eLewAM0jRwvHXdkL","content_index":0,"delta":" quiero","obfuscation":"nhLz7ejpe"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xBvsh5enDmcor6VZrF","item_id":"item_DZ3x5eLewAM0jRwvHXdkL","content_index":0,"delta":" saber","obfuscation":"vTQfxXAqHI"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xBARJ5DEONkCrJn3ok","item_id":"item_DZ3x5eLewAM0jRwvHXdkL","content_index":0,"delta":" qué","obfuscation":"Qf0RA08wBzHO"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xBYBwrXXwtQkrGfCZl","item_id":"item_DZ3x5eLewAM0jRwvHXdkL","content_index":0,"delta":" tan","obfuscation":"EytPH8VbXv2c"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xBFMxhuyuhLMFngZdH","item_id":"item_DZ3x5eLewAM0jRwvHXdkL","content_index":0,"delta":" rápido","obfuscation":"gz2mPktwj"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xB6JIpwoCadusTrfz7","item_id":"item_DZ3x5eLewAM0jRwvHXdkL","content_index":0,"delta":" trans","obfuscation":"XyLAmvzRsq"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xBNEowv1LuL6GWDKpE","item_id":"item_DZ3x5eLewAM0jRwvHXdkL","content_index":0,"delta":"cribes","obfuscation":"Pa4cuqXt08"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xBanXNCwaIwzHrNxJJ","item_id":"item_DZ3x5eLewAM0jRwvHXdkL","content_index":0,"delta":".","obfuscation":"LkrUg7p4GelEH0m"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xBgpaDyjxIwQ9e6RHd","item_id":"item_DZ3x5eLewAM0jRwvHXdkL","content_index":0,"delta":" De","obfuscation":"6C1xN1uES4JZp"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xBtwvunetRLs0BVeuJ","item_id":"item_DZ3x5eLewAM0jRwvHXdkL","content_index":0,"delta":"ber","obfuscation":"rpWNRQuKe4Usa"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xBasq5RjFHD6PUpj7y","item_id":"item_DZ3x5eLewAM0jRwvHXdkL","content_index":0,"delta":"ía","obfuscation":"8BdkXv3Ar3UsxF"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xBIuK7HZMawwTa9PEu","item_id":"item_DZ3x5eLewAM0jRwvHXdkL","content_index":0,"delta":" estar","obfuscation":"IR10voxfPm"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xBJuR8ep67ar9ScLm0","item_id":"item_DZ3x5eLewAM0jRwvHXdkL","content_index":0,"delta":" funcionando","obfuscation":"wCFI"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xBQqiubPhXTJYuM0fq","item_id":"item_DZ3x5eLewAM0jRwvHXdkL","content_index":0,"delta":".","obfuscation":"94N5DJbZcM0Bpap"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.completed | keys: type, event_id, item_id, content_index, transcript, usage
+openai-realtime.ts:277 🔍 [DEBUG] Transcription completed event (full): {"type":"conversation.item.input_audio_transcription.completed","event_id":"event_DZ3xBGasvzIijjslpRsvu","item_id":"item_DZ3x5eLewAM0jRwvHXdkL","content_index":0,"transcript":"A ver, quiero saber qué tan rápido transcribes. Debería estar funcionando.","usage":{"type":"tokens","total_tokens":85,"input_tokens":66,"input_token_details":{"text_tokens":1,"audio_tokens":65},"output_tokens":19}}
+openai-realtime.ts:279 📝 Transcript: A ver, quiero saber qué tan rápido transcribes. Debería estar funcionando.
+useVoiceRecording.ts:44 🔍 [DEBUG] useVoiceRecording: onTranscript callback fired, text length: 74 text: A ver, quiero saber qué tan rápido transcribes. Debería estar funcionando.
+useVoiceRecording.ts:47 🔍 [DEBUG] useVoiceRecording: Updating state — liveTranscript: A ver, quiero saber qué tan rápido transcribes. De | fullTranscript length: 74
+useVoiceRecording.ts:47 🔍 [DEBUG] useVoiceRecording: Updating state — liveTranscript: A ver, quiero saber qué tan rápido transcribes. De | fullTranscript length: 74
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: input_audio_buffer.speech_started | keys: type, event_id, audio_start_ms, item_id
+openai-realtime.ts:267 🎤 Speech detected
+openai-realtime.ts:268 🔍 [DEBUG] Speech started event: {"type":"input_audio_buffer.speech_started","event_id":"event_DZ3xCpkCZesMNEUk95gYf","audio_start_ms":7796,"item_id":"item_DZ3xCh4zftQBRYS77QDlU"}
+openai-realtime.ts:181 🔊 [DEBUG] Mic audio level — avg: 23.2 | max: 169 | (should be >0 when speaking)
+openai-realtime.ts:161 📊 [DEBUG] ICE candidate pair — bytesSent: 0 | bytesReceived: 0 | currentRoundTripTime: 0.198
+openai-realtime.ts:161 📊 [DEBUG] ICE candidate pair — bytesSent: 53473 | bytesReceived: 26236 | currentRoundTripTime: 0.16
+openai-realtime.ts:158 📊 [DEBUG] Audio RTP stats — bytesSent: 36451 | packetsSent: 471 | timestamp: 1777249051342.559
+openai-realtime.ts:161 📊 [DEBUG] ICE candidate pair — bytesSent: 0 | bytesReceived: 0 | currentRoundTripTime: 0.198
+openai-realtime.ts:161 📊 [DEBUG] ICE candidate pair — bytesSent: 64417 | bytesReceived: 29756 | currentRoundTripTime: 0.153
+openai-realtime.ts:158 📊 [DEBUG] Audio RTP stats — bytesSent: 44155 | packetsSent: 574 | timestamp: 1777249053340.535
+openai-realtime.ts:181 🔊 [DEBUG] Mic audio level — avg: 24.7 | max: 200 | (should be >0 when speaking)
+openai-realtime.ts:181 🔊 [DEBUG] Mic audio level — avg: 24.1 | max: 202 | (should be >0 when speaking)
+openai-realtime.ts:161 📊 [DEBUG] ICE candidate pair — bytesSent: 0 | bytesReceived: 0 | currentRoundTripTime: 0.198
+openai-realtime.ts:161 📊 [DEBUG] ICE candidate pair — bytesSent: 75727 | bytesReceived: 33314 | currentRoundTripTime: 0.152
+openai-realtime.ts:158 📊 [DEBUG] Audio RTP stats — bytesSent: 52349 | packetsSent: 674 | timestamp: 1777249055343.446
+openai-realtime.ts:161 📊 [DEBUG] ICE candidate pair — bytesSent: 0 | bytesReceived: 0 | currentRoundTripTime: 0.198
+openai-realtime.ts:161 📊 [DEBUG] ICE candidate pair — bytesSent: 87085 | bytesReceived: 36788 | currentRoundTripTime: 0.154
+openai-realtime.ts:158 📊 [DEBUG] Audio RTP stats — bytesSent: 60467 | packetsSent: 777 | timestamp: 1777249057338.387
+openai-realtime.ts:181 🔊 [DEBUG] Mic audio level — avg: 22.9 | max: 196 | (should be >0 when speaking)
+openai-realtime.ts:161 📊 [DEBUG] ICE candidate pair — bytesSent: 0 | bytesReceived: 0 | currentRoundTripTime: 0.198
+openai-realtime.ts:161 📊 [DEBUG] ICE candidate pair — bytesSent: 97828 | bytesReceived: 40308 | currentRoundTripTime: 0.154
+openai-realtime.ts:158 📊 [DEBUG] Audio RTP stats — bytesSent: 68210 | packetsSent: 877 | timestamp: 1777249059338.309
+openai-realtime.ts:181 🔊 [DEBUG] Mic audio level — avg: 20.3 | max: 189 | (should be >0 when speaking)
+openai-realtime.ts:161 📊 [DEBUG] ICE candidate pair — bytesSent: 0 | bytesReceived: 0 | currentRoundTripTime: 0.198
+openai-realtime.ts:161 📊 [DEBUG] ICE candidate pair — bytesSent: 108792 | bytesReceived: 43824 | currentRoundTripTime: 0.152
+openai-realtime.ts:158 📊 [DEBUG] Audio RTP stats — bytesSent: 76058 | packetsSent: 977 | timestamp: 1777249061339.183
+openai-realtime.ts:181 🔊 [DEBUG] Mic audio level — avg: 22.0 | max: 212 | (should be >0 when speaking)
+openai-realtime.ts:181 🔊 [DEBUG] Mic audio level — avg: 20.1 | max: 205 | (should be >0 when speaking)
+openai-realtime.ts:161 📊 [DEBUG] ICE candidate pair — bytesSent: 0 | bytesReceived: 0 | currentRoundTripTime: 0.198
+openai-realtime.ts:161 📊 [DEBUG] ICE candidate pair — bytesSent: 119988 | bytesReceived: 47411 | currentRoundTripTime: 0.16
+openai-realtime.ts:158 📊 [DEBUG] Audio RTP stats — bytesSent: 84014 | packetsSent: 1080 | timestamp: 1777249063343.647
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: input_audio_buffer.speech_stopped | keys: type, event_id, audio_end_ms, item_id
+openai-realtime.ts:272 🤐 Speech stopped
+openai-realtime.ts:273 🔍 [DEBUG] Speech stopped event: {"type":"input_audio_buffer.speech_stopped","event_id":"event_DZ3xRM0mKMWtArGVFsX06","audio_end_ms":22976,"item_id":"item_DZ3xCh4zftQBRYS77QDlU"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: input_audio_buffer.committed | keys: type, event_id, previous_item_id, item_id
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: input_audio_buffer.committed | Full event: {"type":"input_audio_buffer.committed","event_id":"event_DZ3xRCIR49RSDeXwpSyzI","previous_item_id":"item_DZ3x5eLewAM0jRwvHXdkL","item_id":"item_DZ3xCh4zftQBRYS77QDlU"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.created | keys: type, event_id, previous_item_id, item
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.created | Full event: {"type":"conversation.item.created","event_id":"event_DZ3xRC5hxbdHk7DoGw2et","previous_item_id":"item_DZ3x5eLewAM0jRwvHXdkL","item":{"id":"item_DZ3xCh4zftQBRYS77QDlU","object":"realtime.item","type":"message","status":"completed","role":"user","content":[{"type":"input_audio","transcript":null}]}}
+openai-realtime.ts:161 📊 [DEBUG] ICE candidate pair — bytesSent: 0 | bytesReceived: 0 | currentRoundTripTime: 0.198
+openai-realtime.ts:161 📊 [DEBUG] ICE candidate pair — bytesSent: 130674 | bytesReceived: 51622 | currentRoundTripTime: 0.157
+openai-realtime.ts:158 📊 [DEBUG] Audio RTP stats — bytesSent: 91635 | packetsSent: 1180 | timestamp: 1777249065341.141
+openai-realtime.ts:181 🔊 [DEBUG] Mic audio level — avg: 18.1 | max: 198 | (should be >0 when speaking)
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xRcCMMPrQ2ZO5oPHDX","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":"No","obfuscation":"zwUItQJ6TgUl7u"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xRz34jr1Bf2FBJzaQH","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":".","obfuscation":"IUJ9rB7rs726Xg6"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xRKICXY35keClmmNF2","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":" Ah","obfuscation":"miTlA62aa5M9g"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xR2tmc5e1I4NO7aPc2","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":",","obfuscation":"4FK9WiOFW3Gmo6M"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xREqTVZ2SfqRgTJffC","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":" ya","obfuscation":"d50BDJaHVbuOK"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xRj5pB84AEa2ofg4oY","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":".","obfuscation":"ZRizC5LZXPhV2X9"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xRe82iWGs7NNUoZo70","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":" OK","obfuscation":"Ohx3hjCWI9ErV"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xRYRigR5JB5j1iJRKp","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":",","obfuscation":"m0lfwU4B9ue3oSx"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xRc0MkZT8Dh4P4B5vH","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":" OK","obfuscation":"HbfexShDyT1cU"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xRUIGAlCKXSLkjvREF","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":".","obfuscation":"s6ldyFkEoch0NUl"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xR9bfv1VYGzcImVLjD","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":" Ya","obfuscation":"AnIWgcyoc6ZKn"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xR51dfoEKY0D2lpS7i","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":" ya","obfuscation":"HIwM4Lmif8GUg"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xRlmiZB1FLUEoVE8yp","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":" está","obfuscation":"xHcxnESQCQx"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xRWzY49ZTOE7GV03mp","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":" funcionando","obfuscation":"C22A"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xR1fgGIeMnMvQCEl4s","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":",","obfuscation":"1fepa912QclHUQO"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xRXxnRWQPZ380C7BGB","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":" pero","obfuscation":"sQZCDFIH1gl"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xRhpHXTOxas80uYV5J","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":" como","obfuscation":"OBWvlaYLSX4"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xRlO2buCcIJxKxwWPC","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":" que","obfuscation":"QsDtYvu76dGR"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xRwxUxNd9tzAy5RnS2","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":" necesita","obfuscation":"dxSWUvx"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xRy2mbE00WDtl6ZBnf","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":" cinco","obfuscation":"8bJuz17Ixx"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xRYnVmSbJNab22svqU","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":" segundos","obfuscation":"FHHBwr1"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xRPkpe4ZjKF90buajm","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":",","obfuscation":"axvk6daqrv9qZJZ"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xRhUpcD3JdpA3AlZXi","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":" yo","obfuscation":"jVMmW0PGCs0Ou"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xRdeLTASNZyYg07xRs","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":" pienso","obfuscation":"7vgfLw6QC"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: input_audio_buffer.speech_started | keys: type, event_id, audio_start_ms, item_id
+openai-realtime.ts:267 🎤 Speech detected
+openai-realtime.ts:268 🔍 [DEBUG] Speech started event: {"type":"input_audio_buffer.speech_started","event_id":"event_DZ3xRhvPVQfyocZJydhVg","audio_start_ms":23060,"item_id":"item_DZ3xRthwmhEijxcENJz8J"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xRBF9FnhpIkFPDAl41","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":",","obfuscation":"OrG6FNsYzCBG9Dw"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xRUDAcgSajAxAZSr7t","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":" para","obfuscation":"uIy68famt4n"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xR37iXuQlzeXg97Mku","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":" aparecer","obfuscation":"hdVb6wT"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xRKJdTckG33FraCY2s","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":".","obfuscation":"wljSkCmzDCkA0RV"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xR105bwKFe1SOKtKny","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":" y","obfuscation":"ZCP7aM5gL3ThJr"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xRz7OUyiAOpCTlbuBT","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":" es","obfuscation":"hcbcsxkJubKIs"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xRbtauQ3lb3RTYd7ag","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":" demasiado","obfuscation":"OM5t6R"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xRgOwxAFh7A1Ch2m4p","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":" tiempo","obfuscation":"JqbxAO5vt"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xRbU6ZO8a6767Jy2wx","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":",","obfuscation":"dt06mIl0MQPw1df"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xRPc72Z461SsoCBWz9","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":" ¿","obfuscation":"5Fjs0Jc58wRrhS"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xRnwbLaRBi54jS3FJy","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":"no","obfuscation":"vqH0IzTRCOu5Hw"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xRwOjSW9P50R4czfnz","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":"?","obfuscation":"9Fh7KQl1OubqWek"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xRSiSC2YDl7TXbOlPm","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":" um","obfuscation":"qGomVngfgi2Bp"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xRwi7Uwf3bGmM52aVN","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":" Hay","obfuscation":"ZdfLy8lcAEsV"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xRsmIvoUkwMYoyVNnb","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":" que","obfuscation":"LWUwQXsCaAQt"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xRQ3XG4yvTCRnvJUpN","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":" ver","obfuscation":"s3sOL51J17kq"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xRGum9YPXiAVk8qC6t","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":",","obfuscation":"vkVs1MYR0Sb3eUz"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xR4OAxn5NZa4ihZnDl","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":" a","obfuscation":"5dDHErgrQVdGWC"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xRB9g800EYUmq5ZP3p","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":" ver","obfuscation":"IiFLIndFZ5oS"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xRdg4SmIo8TsHmMHtb","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":" con","obfuscation":"dcJan70pZ1ZO"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xReT1zmDXpWxmRTpCT","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":" los","obfuscation":"QKTzljnBIvDn"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.delta | keys: type, event_id, item_id, content_index, delta, obfuscation
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.input_audio_transcription.delta | Full event: {"type":"conversation.item.input_audio_transcription.delta","event_id":"event_DZ3xRaqdWPsdOhZBIadef","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"delta":"...","obfuscation":"DGzmbnG1sfLCW"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.input_audio_transcription.completed | keys: type, event_id, item_id, content_index, transcript, usage
+openai-realtime.ts:277 🔍 [DEBUG] Transcription completed event (full): {"type":"conversation.item.input_audio_transcription.completed","event_id":"event_DZ3xRZc7uUYHmTeVsYnaD","item_id":"item_DZ3xCh4zftQBRYS77QDlU","content_index":0,"transcript":"No. Ah, ya. OK, OK. Ya ya está funcionando, pero como que necesita cinco segundos, yo pienso, para aparecer. y es demasiado tiempo, ¿no? um Hay que ver, a ver con los...","usage":{"type":"tokens","total_tokens":200,"input_tokens":152,"input_token_details":{"text_tokens":1,"audio_tokens":151},"output_tokens":48}}
+openai-realtime.ts:279 📝 Transcript: No. Ah, ya. OK, OK. Ya ya está funcionando, pero como que necesita cinco segundos, yo pienso, para aparecer. y es demasiado tiempo, ¿no? um Hay que ver, a ver con los...
+useVoiceRecording.ts:44 🔍 [DEBUG] useVoiceRecording: onTranscript callback fired, text length: 169 text: No. Ah, ya. OK, OK. Ya ya está funcionando, pero como que necesita cinco segundos, yo pienso, para a
+useVoiceRecording.ts:47 🔍 [DEBUG] useVoiceRecording: Updating state — liveTranscript: No. Ah, ya. OK, OK. Ya ya está funcionando, pero c | fullTranscript length: 244
+useVoiceRecording.ts:47 🔍 [DEBUG] useVoiceRecording: Updating state — liveTranscript: No. Ah, ya. OK, OK. Ya ya está funcionando, pero c | fullTranscript length: 244
+openai-realtime.ts:181 🔊 [DEBUG] Mic audio level — avg: 16.9 | max: 197 | (should be >0 when speaking)
+openai-realtime.ts:161 📊 [DEBUG] ICE candidate pair — bytesSent: 0 | bytesReceived: 0 | currentRoundTripTime: 0.198
+openai-realtime.ts:161 📊 [DEBUG] ICE candidate pair — bytesSent: 142877 | bytesReceived: 67302 | currentRoundTripTime: 0.157
+openai-realtime.ts:158 📊 [DEBUG] Audio RTP stats — bytesSent: 99858 | packetsSent: 1280 | timestamp: 1777249067343.109
+openai-realtime.ts:161 📊 [DEBUG] ICE candidate pair — bytesSent: 0 | bytesReceived: 0 | currentRoundTripTime: 0.198
+openai-realtime.ts:161 📊 [DEBUG] ICE candidate pair — bytesSent: 152979 | bytesReceived: 70822 | currentRoundTripTime: 0.188
+openai-realtime.ts:158 📊 [DEBUG] Audio RTP stats — bytesSent: 106604 | packetsSent: 1383 | timestamp: 1777249069340.05
+openai-realtime.ts:181 🔊 [DEBUG] Mic audio level — avg: 15.4 | max: 190 | (should be >0 when speaking)
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: input_audio_buffer.speech_stopped | keys: type, event_id, audio_end_ms, item_id
+openai-realtime.ts:272 🤐 Speech stopped
+openai-realtime.ts:273 🔍 [DEBUG] Speech stopped event: {"type":"input_audio_buffer.speech_stopped","event_id":"event_DZ3xVul5HnApQWyB1hWd0","audio_end_ms":27104,"item_id":"item_DZ3xRthwmhEijxcENJz8J"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: input_audio_buffer.committed | keys: type, event_id, previous_item_id, item_id
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: input_audio_buffer.committed | Full event: {"type":"input_audio_buffer.committed","event_id":"event_DZ3xVFFM3yblY7LooLJrP","previous_item_id":"item_DZ3xCh4zftQBRYS77QDlU","item_id":"item_DZ3xRthwmhEijxcENJz8J"}
+openai-realtime.ts:252 🔍 [DEBUG] <<< Incoming event type: conversation.item.created | keys: type, event_id, previous_item_id, item
+openai-realtime.ts:302 🔍 [DEBUG] Unhandled event type: conversation.item.created | Full event: {"type":"conversation.item.created","event_id":"event_DZ3xV5ZWf1YfN53BB3LXR","previous_item_id":"item_DZ3xCh4zftQBRYS77QDlU","item":{"id":"item_DZ3xRthwmhEijxcENJz8J","object":"realtime.item","type":"message","status":"completed","role":"user","content":[{"type":"input_audio","transcript":null}]}}
+openai-realtime.ts:331 🔌 Disconnected
+openai-realtime.ts:235 📴 Data channel closed

@@ -15,19 +15,23 @@ export async function POST() {
   }
 
   try {
-    const response = await fetch('https://api.openai.com/v1/realtime/client_secrets', {
+    const tokenRequestBody = {
+      model: 'gpt-4o-realtime-preview',
+      voice: 'alloy',
+    }
+    console.log('🔍 [DEBUG] Token request body:', JSON.stringify(tokenRequestBody))
+
+    const response = await fetch('https://api.openai.com/v1/realtime/sessions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
+        'OpenAI-Beta': 'realtime=v1',
       },
-      body: JSON.stringify({
-        session: {
-          type: 'realtime',
-          model: 'gpt-4o-realtime-preview',
-        },
-      }),
+      body: JSON.stringify(tokenRequestBody),
     })
+
+    console.log('🔍 [DEBUG] Token response status:', response.status, response.statusText)
 
     if (!response.ok) {
       const errorText = await response.text()
@@ -39,11 +43,9 @@ export async function POST() {
     }
 
     const data = await response.json()
+    console.log('🔍 [DEBUG] Full OpenAI token response:', JSON.stringify(data, null, 2))
 
-    // Handle both response formats: { client_secret: "ek_..." } or { client_secret: { value, expires_at } }
-    const token = typeof data.client_secret === 'string'
-      ? data.client_secret
-      : data.client_secret?.value ?? data.value
+    const token = data.client_secret?.value
 
     if (!token) {
       console.error('No client_secret in response:', JSON.stringify(data))
@@ -55,7 +57,7 @@ export async function POST() {
 
     return NextResponse.json({
       token,
-      expires_at: data.expires_at ?? data.client_secret?.expires_at,
+      expires_at: data.client_secret?.expires_at,
     })
   } catch (error) {
     console.error('Error creating realtime session:', error)
