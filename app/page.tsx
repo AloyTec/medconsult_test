@@ -1,61 +1,57 @@
 'use client'
 
+import Link from 'next/link'
 import { VoiceRecorder } from './components/VoiceRecorder'
+import { IconSparkles } from './components/icons'
 
 export default function Home() {
   return (
-    <div className="space-y-6">
-      {/* Introduction */}
-      <section className="rounded-lg bg-gradient-to-r from-blue-50 to-blue-50 p-6 border border-blue-200">
-        <h2 className="text-2xl font-bold text-blue-900 mb-3">
-          Welcome to MedConsult Voice Testing
-        </h2>
-        <p className="text-blue-700 mb-4">
-          This application allows you to test real-time medical voice transcription with
-          AI-powered clinical data extraction. The system uses OpenAI's Realtime API to
-          transcribe your voice and automatically extract structured clinical information.
+    <div className="space-y-8">
+      {/* Hero */}
+      <section className="overflow-hidden rounded-2xl border border-stroke bg-gradient-to-br from-surface-strong via-surface to-white p-8">
+        <h1 className="text-3xl font-bold text-primary">Estudio de prompts clínicos</h1>
+        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
+          Transcribe el dictado médico y extrae la consulta en datos estructurados — y afina los
+          prompts de la IA hasta dejarlos perfectos, sin tocar la app de los doctores.
         </p>
-        <div className="space-y-2 text-sm text-blue-700">
-          <p>
-            <strong>✓ Real-time transcription:</strong> See text appear as you speak
-          </p>
-          <p>
-            <strong>✓ Automatic data extraction:</strong> Clinical data is extracted to JSON
-          </p>
-          <p>
-            <strong>✓ Confidence scoring:</strong> See how confident the AI is about the data
-          </p>
-          <p>
-            <strong>✓ Patient privacy:</strong> Data is processed locally and not stored
-          </p>
+        <div className="mt-6">
+          <Link
+            href="/prompts"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-[10px] bg-primary px-5 text-sm font-semibold text-white transition-colors hover:bg-primary-hover"
+          >
+            <IconSparkles className="h-4 w-4" /> Abrir editor de prompts
+          </Link>
         </div>
       </section>
 
-      {/* Setup instructions */}
-      <section className="rounded-lg bg-yellow-50 p-4 border border-yellow-200">
-        <h3 className="font-semibold text-yellow-900 mb-2">⚙️ Setup Required</h3>
-        <ol className="text-sm text-yellow-900 space-y-1 ml-4 list-decimal">
-          <li>Copy your OpenAI API key</li>
+      {/* Configuración (server-side, la forma correcta) */}
+      <section className="rounded-2xl border border-stroke bg-surface p-5">
+        <h2 className="mb-2 text-base font-semibold text-primary">Configuración</h2>
+        <ol className="ml-4 list-decimal space-y-1 text-sm text-ink">
           <li>
-            Create <code className="bg-yellow-100 px-1 rounded">.env.local</code> file
+            En <code className="rounded bg-white px-1 text-xs">.env.local</code> define{' '}
+            <code className="rounded bg-white px-1 text-xs">OPENAI_API_KEY=tu_clave</code>{' '}
+            <strong>(server-side — sin el prefijo <code>NEXT_PUBLIC_</code>)</strong>.
           </li>
           <li>
-            Add: <code className="bg-yellow-100 px-1 rounded">NEXT_PUBLIC_OPENAI_API_KEY=your_key</code>
+            Ejecuta <code className="rounded bg-white px-1 text-xs">npm run dev</code>.
           </li>
-          <li>Reload the page</li>
+          <li>Abre el editor de prompts o el demo de voz.</li>
         </ol>
-      </section>
-
-      {/* Main voice recorder */}
-      <section>
-        <VoiceRecorder />
-      </section>
-
-      {/* Footer info */}
-      <section className="rounded-lg bg-gray-50 p-4 border border-gray-200 text-center text-sm text-gray-600">
-        <p>
-          Questions? Check the documentation for more information about using this app.
+        <p className="mt-2 text-xs text-muted">
+          La clave vive solo en el servidor; el navegador nunca la recibe.
         </p>
+      </section>
+
+      {/* Demo de voz (carril en evolución → real-time fiel a Flutter) */}
+      <section className="space-y-2">
+        <div className="flex items-center gap-2">
+          <h2 className="text-base font-semibold text-ink">Demo de voz</h2>
+          <span className="rounded-full bg-surface px-2 py-0.5 text-[11px] font-semibold text-soft-blue">
+            en evolución
+          </span>
+        </div>
+        <VoiceRecorder />
       </section>
     </div>
   )

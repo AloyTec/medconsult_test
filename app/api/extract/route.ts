@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const { transcript } = await req.json()
+  const { transcript, prompt } = await req.json()
 
   if (!transcript || typeof transcript !== 'string') {
     return NextResponse.json(
@@ -24,6 +24,14 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     )
   }
+
+  // The prompt is editable from the UI (the whole point of the POC): the client sends
+  // the (possibly edited) prompt per request. Falls back to the canonical default when
+  // absent/blank, so existing callers that only send { transcript } keep working.
+  const instructions =
+    typeof prompt === 'string' && prompt.trim().length > 0
+      ? prompt
+      : EXTRACTION_PROMPT
 
   try {
     const response = await fetch('https://api.openai.com/v1/responses', {
@@ -35,7 +43,7 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         input: transcript,
-        instructions: EXTRACTION_PROMPT,
+        instructions,
         text: {
           format: {
             name: 'default',

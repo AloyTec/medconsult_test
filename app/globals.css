@@ -1,66 +1,50 @@
 @import "tailwindcss";
 
-@layer base {
-  body {
-    @apply bg-gray-50 text-gray-900;
-  }
+/* ============================================================
+   MedConsult design tokens — mirror the Flutter app's system
+   (medconsult_app/lib/core/theme.dart) so the web POC reads as
+   the same product to the doctors who already use the app.
+   ============================================================ */
+@theme {
+  --color-primary: #07394f;        /* deep clinical teal — brand */
+  --color-primary-hover: #0a4a66;
+  --color-soft-blue: #3f829e;
+  --color-surface: #e8f4fa;        /* light blue panel surface */
+  --color-surface-strong: #d9f2ff;
+  --color-success: #1e8e5a;
+  --color-success-surface: #e8fff0;
+  --color-danger: #d32f2f;
+  --color-danger-surface: #ffe7e7;
+  --color-ink: #0f2a36;            /* primary text (near-teal) */
+  --color-muted: #6e7c84;          /* secondary text */
+  --color-stroke: #e2e2e2;         /* borders / dividers */
+  --color-disabled: #bac3c8;
 
-  h1 {
-    @apply text-3xl font-bold;
-  }
-
-  h2 {
-    @apply text-2xl font-semibold;
-  }
-
-  button {
-    @apply transition-colors duration-200;
-  }
+  --font-sans: "Roboto", ui-sans-serif, system-ui, sans-serif;
 }
 
-/* Component classes defined with standard CSS for Tailwind v4 compatibility */
+@layer base {
+  body {
+    @apply text-ink antialiased;
+    background-color: #f6f8fa;
+    font-family: var(--font-sans);
+  }
+  h1 { @apply text-2xl font-bold tracking-tight; }
+  h2 { @apply text-xl font-semibold; }
+}
+
 @layer components {
-  .btn {
-    @apply px-4 py-2 rounded-lg font-medium transition-colors duration-200;
-  }
-
-  .btn-primary {
-    @apply px-4 py-2 rounded-lg font-medium transition-colors duration-200 bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800;
-  }
-
-  .btn-secondary {
-    @apply px-4 py-2 rounded-lg font-medium transition-colors duration-200 bg-gray-200 text-gray-900 hover:bg-gray-300 active:bg-gray-400;
-  }
-
-  .btn-danger {
-    @apply px-4 py-2 rounded-lg font-medium transition-colors duration-200 bg-red-600 text-white hover:bg-red-700 active:bg-red-800;
-  }
-
-  .btn-disabled {
-    @apply px-4 py-2 rounded-lg font-medium transition-colors duration-200 bg-gray-300 text-gray-500 cursor-not-allowed;
-  }
-
+  /* Card — used across the POC (DataExtraction, editor panels). */
   .card {
-    @apply bg-white rounded-lg shadow-md p-6 border border-gray-200;
+    @apply rounded-2xl border border-stroke bg-white p-6;
+    box-shadow: 0 1px 2px rgba(7, 57, 79, 0.04), 0 18px 34px -26px rgba(7, 57, 79, 0.28);
   }
 
-  .input {
-    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500;
+  /* Text input / textarea — radius 8 + teal focus, like theme.dart inputs. */
+  .field {
+    @apply w-full rounded-lg border border-stroke bg-white p-3 text-sm text-ink placeholder:text-disabled;
   }
-
-  .badge {
-    @apply inline-block px-3 py-1 text-sm font-medium rounded-full;
-  }
-
-  .badge-success {
-    @apply inline-block px-3 py-1 text-sm font-medium rounded-full bg-green-100 text-green-800;
-  }
-
-  .badge-warning {
-    @apply inline-block px-3 py-1 text-sm font-medium rounded-full bg-yellow-100 text-yellow-800;
-  }
-
-  .badge-error {
-    @apply inline-block px-3 py-1 text-sm font-medium rounded-full bg-red-100 text-red-800;
+  .field:focus {
+    @apply border-primary outline-none ring-1 ring-primary;
   }
 }

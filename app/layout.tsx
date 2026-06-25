@@ -1,36 +1,54 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import './globals.css'
+import { LogoMark, IconSparkles, IconMic } from './components/icons'
+import { NavLink } from './components/NavLink'
 
 export const metadata: Metadata = {
-  title: 'MedConsult Voice Testing',
+  title: 'MedConsult — Estudio de prompts clínicos',
   description:
-    'Real-time medical voice transcription with AI-powered data extraction',
+    'Edita los prompts de la IA y observa, al instante, cómo cambia la extracción de la consulta.',
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es">
-      <body className="min-h-screen bg-gray-50">
-        <div className="mx-auto max-w-6xl">
-          <header className="border-b border-gray-200 bg-white shadow-sm">
-            <div className="px-6 py-4">
-              <h1 className="text-2xl font-bold text-blue-700">
-                🎤 MedConsult Voice Testing
-              </h1>
-              <p className="mt-1 text-sm text-gray-600">
-                Real-time medical voice transcription with AI data extraction
-              </p>
-            </div>
-          </header>
-          <main className="px-6 py-8">{children}</main>
-          <footer className="border-t border-gray-200 bg-white py-4 text-center text-sm text-gray-600">
-            <p>MedConsult v1.0 | Built with Next.js 16 & OpenAI Realtime API</p>
-          </footer>
-        </div>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className="min-h-dvh">
+        <header className="sticky top-0 z-20 border-b border-stroke bg-white/85 backdrop-blur">
+          <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
+            <Link href="/" className="flex items-center gap-2.5">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-surface text-primary">
+                <LogoMark className="h-5 w-5" />
+              </span>
+              <span className="leading-tight">
+                <span className="block text-base font-bold text-primary">MedConsult</span>
+                <span className="block text-[11px] text-muted">Estudio de prompts clínicos</span>
+              </span>
+            </Link>
+            <nav className="flex items-center gap-1">
+              <NavLink href="/prompts">
+                <IconSparkles className="h-4 w-4" /> Editor de prompts
+              </NavLink>
+              <NavLink href="/">
+                <IconMic className="h-4 w-4" /> Grabación
+              </NavLink>
+            </nav>
+          </div>
+        </header>
+
+        <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
+
+        <footer className="mx-auto max-w-6xl px-4 py-6 text-center text-xs text-muted">
+          MedConsult · entorno de pruebas · usa siempre datos de pacientes ficticios
+        </footer>
       </body>
     </html>
   )
