@@ -1,10 +1,17 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { EXTRACTION_PROMPT } from '@/lib/extraction-schema'
 import type { ExtractedData } from '@/lib/types'
+import { useVoiceRecording } from '@/lib/hooks/useVoiceRecording'
 import { DataExtraction } from '../components/DataExtraction'
-import { IconSparkles, IconTranscript, IconClipboardCheck, Spinner } from '../components/icons'
+import { IconSparkles, IconTranscript, IconClipboardCheck, IconMic, Spinner } from '../components/icons'
+
+function fmt(s: number): string {
+  const m = Math.floor(s / 60).toString().padStart(2, '0')
+  const sec = (s % 60).toString().padStart(2, '0')
+  return `${m}:${sec}`
+}
 
 /**
  * Prompt Playground (POC View 1 — the #1 priority).
@@ -46,6 +53,21 @@ export default function PromptPlaygroundPage() {
   const [latencyMs, setLatencyMs] = useState<number | null>(null)
 
   const promptEdited = prompt !== EXTRACTION_PROMPT
+
+  // Live dictation (faithful to Flutter): mic → realtime transcript → 2s-debounced
+  // extraction with the *current* (edited) prompt → fields fill in as you speak.
+  const voice = useVoiceRecording({ getPrompt: () => prompt })
+  const recording = voice.state.isRecording
+
+  useEffect(() => {
+    if (voice.state.extractedData) setResult(voice.state.extractedData)
+  }, [voice.state.extractedData])
+
+  useEffect(() => {
+    if (voice.state.isRecording) {
+      setTranscript((voice.state.fullTranscript + ' ' + voice.state.liveTranscript).trim())
+    }
+  }, [voice.state.fullTranscript, voice.state.liveTranscript, voice.state.isRecording])
 
   async function runExtraction() {
     if (!transcript.trim()) {
@@ -171,7 +193,7 @@ export default function PromptPlaygroundPage() {
               <button
                 type="button"
                 onClick={runExtraction}
-                disabled={isExtracting}
+                disabled={isExtracting || recording}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-[10px] bg-primary px-5 text-sm font-semibold text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:bg-disabled"
               >
                 {isExtracting ? (
@@ -184,18 +206,49 @@ export default function PromptPlaygroundPage() {
                   </>
                 )}
               </button>
-              {latencyMs != null && !isExtracting && (
+
+              <button
+                type="button"
+                onClick={() => (recording ? voice.stop() : voice.start())}
+                disabled={voice.state.isProcessing}
+                className={`inline-flex h-11 items-center justify-center gap-2 rounded-[10px] px-5 text-sm font-semibold transition-colors disabled:cursor-not-allowed ${
+                  recording
+                    ? 'bg-danger-surface text-danger hover:bg-[#ffd9d9]'
+                    : 'border border-primary bg-white text-primary hover:bg-surface disabled:border-disabled disabled:text-disabled'
+                }`}
+              >
+                {recording ? (
+                  <>
+                    <span className="h-2.5 w-2.5 rounded-full bg-danger" /> Detener · {fmt(voice.state.elapsedSeconds)}
+                  </>
+                ) : voice.state.isProcessing ? (
+                  <>
+                    <Spinner className="h-4 w-4" /> Conectando…
+                  </>
+                ) : (
+                  <>
+                    <IconMic className="h-4 w-4" /> Dictar
+                  </>
+                )}
+              </button>
+
+              {latencyMs != null && !isExtracting && !recording && (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-success-surface px-3 py-1 text-xs font-medium text-success">
                   <IconClipboardCheck className="h-3.5 w-3.5" /> Listo · {latencyMs} ms
                 </span>
               )}
+              {recording && (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-1 text-xs font-medium text-soft-blue">
+                  Escuchando… los campos se llenan al pausar
+                </span>
+              )}
             </div>
-            {error && (
+            {(error || voice.state.error) && (
               <p
                 role="alert"
                 className="rounded-lg bg-danger-surface px-3 py-2 text-sm text-danger"
               >
-                {error}
+                {error ?? voice.state.error}
               </p>
             )}
           </section>
@@ -203,7 +256,7 @@ export default function PromptPlaygroundPage() {
 
         {/* Columna derecha: resultados (reusa el componente existente) */}
         <div className="lg:sticky lg:top-24 lg:self-start">
-          <DataExtraction extractedData={result} isExtracting={isExtracting} />
+          <DataExtraction extractedData={result} isExtracting={isExtracting || voice.state.isExtracting} />
         </div>
       </div>
     </div>

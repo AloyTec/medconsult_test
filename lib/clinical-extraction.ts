@@ -12,13 +12,16 @@ export class ClinicalExtractionService {
   private jobId: number = 0
   private onExtracted: ((data: ExtractedData) => void) | null = null
   private onExtracting: ((isExtracting: boolean) => void) | null = null
+  private getPrompt: (() => string | undefined) | null = null
 
   constructor(
     onExtracted: (data: ExtractedData) => void,
-    onExtracting: (isExtracting: boolean) => void
+    onExtracting: (isExtracting: boolean) => void,
+    getPrompt?: () => string | undefined
   ) {
     this.onExtracted = onExtracted
     this.onExtracting = onExtracting
+    this.getPrompt = getPrompt ?? null
   }
 
   /**
@@ -47,11 +50,19 @@ export class ClinicalExtractionService {
     const currentJobId = ++this.jobId
     this.onExtracting?.(true)
 
+    // The live prompt (if the caller provides one) so on-the-fly prompt edits
+    // take effect on the next extraction. Blank/absent → server uses the default.
+    const prompt = this.getPrompt?.()
+    const payload =
+      prompt && prompt.trim().length > 0
+        ? { transcript: this.buffer, prompt }
+        : { transcript: this.buffer }
+
     try {
       const response = await fetch('/api/extract', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transcript: this.buffer }),
+        body: JSON.stringify(payload),
       })
 
       // Stale check: a newer extraction has been triggered

@@ -6,7 +6,11 @@ import { ClinicalExtractionService } from '../clinical-extraction'
 import { validateConsistency, summarizeSections } from '../api'
 import type { RecordingState, SubmitResult } from '../types'
 
-export function useVoiceRecording() {
+export function useVoiceRecording(options?: { getPrompt?: () => string | undefined }) {
+  // Keep the latest prompt-getter in a ref so edits during recording are picked up.
+  const getPromptRef = useRef(options?.getPrompt)
+  getPromptRef.current = options?.getPrompt
+
   const [state, setState] = useState<RecordingState>({
     isRecording: false,
     isPaused: false,
@@ -37,7 +41,8 @@ export function useVoiceRecording() {
         },
         (isExtracting) => {
           setState((prev) => ({ ...prev, isExtracting }))
-        }
+        },
+        () => getPromptRef.current?.()
       )
 
       openaiRef.current = new OpenAIRealtimeClient()
