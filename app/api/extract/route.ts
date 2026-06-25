@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { EXTRACTION_PROMPT, EXTRACTION_SCHEMA } from '@/lib/extraction-schema'
+import { invokeClaudeJson } from '@/lib/bedrock'
+
+// Exact JSON shape for the Bedrock lane. OpenAI enforces it via EXTRACTION_SCHEMA
+// (json_schema); Bedrock InvokeModel has no schema enforcement, so we spell it out.
+const JSON_SHAPE = `Devuelve SOLO un objeto JSON con esta forma EXACTA (sin texto adicional):
+{"patient":{"name":string|null,"lastName":string|null,"age":number|null,"document":string|null,"docType":0|1|3|null},"clinicalSections":{"antecedentes":string|null,"anamnesis":string|null,"examenFisico":string|null,"diagnostico":string|null,"plan":string|null}}`
 
 /**
  * Server-side proxy for clinical data extraction.
@@ -7,16 +13,7 @@ import { EXTRACTION_PROMPT, EXTRACTION_SCHEMA } from '@/lib/extraction-schema'
  * Matches Flutter's extractStructuredData() exactly.
  */
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.OPENAI_API_KEY
-
-  if (!apiKey) {
-    return NextResponse.json(
-      { error: 'OPENAI_API_KEY not configured' },
-      { status: 500 }
-    )
-  }
-
-  const { transcript, prompt } = await req.json()
+  const { transcript, prompt, engine } = await req.json()
 
   if (!transcript || typeof transcript !== 'string') {
     return NextResponse.json(
@@ -32,6 +29,29 @@ export async function POST(req: NextRequest) {
     typeof prompt === 'string' && prompt.trim().length > 0
       ? prompt
       : EXTRACTION_PROMPT
+
+  // ── AWS Bedrock lane (Claude Haiku 4.5, IAM-scoped — no API key) ──
+  if (engine === 'bedrock') {
+    try {
+      const result = await invokeClaudeJson(`${instructions}\n\n${JSON_SHAPE}`, transcript, 1024)
+      return NextResponse.json(result)
+    } catch (error) {
+      console.error('Bedrock extraction error:', error)
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : 'Bedrock extraction failed' },
+        { status: 500 }
+      )
+    }
+  }
+
+  // ── OpenAI lane (default) ──
+  const apiKey = process.env.OPENAI_API_KEY
+  if (!apiKey) {
+    return NextResponse.json(
+      { error: 'OPENAI_API_KEY not configured' },
+      { status: 500 }
+    )
+  }
 
   try {
     const response = await fetch('https://api.openai.com/v1/responses', {
