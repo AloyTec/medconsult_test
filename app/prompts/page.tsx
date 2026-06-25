@@ -46,13 +46,55 @@ const SAMPLE_TRANSCRIPTS: { label: string; text: string }[] = [
 
 export default function PromptPlaygroundPage() {
   const [prompt, setPrompt] = useState(EXTRACTION_PROMPT)
+  const [baseline, setBaseline] = useState(EXTRACTION_PROMPT) // last loaded/saved value (from SSM)
   const [transcript, setTranscript] = useState('')
   const [result, setResult] = useState<ExtractedData | null>(null)
   const [isExtracting, setIsExtracting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [latencyMs, setLatencyMs] = useState<number | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [saveMsg, setSaveMsg] = useState<string | null>(null)
 
-  const promptEdited = prompt !== EXTRACTION_PROMPT
+  // Load the saved prompt from the isolated test SSM namespace on mount; the API falls
+  // back to the bundled default when nothing is saved yet.
+  useEffect(() => {
+    fetch('/api/prompts')
+      .then((r) => r.json())
+      .then((d) => {
+        const v = d?.prompts?.extraction?.value
+        if (typeof v === 'string' && v.length > 0) {
+          setPrompt(v)
+          setBaseline(v)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  const promptEdited = prompt !== baseline
+  const promptIsDefault = prompt === EXTRACTION_PROMPT
+
+  async function savePrompt() {
+    setSaving(true)
+    setSaveMsg(null)
+    try {
+      const res = await fetch('/api/prompts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'extraction', value: prompt }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setSaveMsg(data?.error ?? `Error al guardar (${res.status})`)
+        return
+      }
+      setBaseline(prompt)
+      setSaveMsg('Guardado en SSM ✓')
+    } catch {
+      setSaveMsg('No se pudo guardar (problema de red).')
+    } finally {
+      setSaving(false)
+    }
+  }
 
   // Live dictation (faithful to Flutter): mic → realtime transcript → 2s-debounced
   // extraction with the *current* (edited) prompt → fields fill in as you speak.
@@ -128,22 +170,49 @@ export default function PromptPlaygroundPage() {
                 <h2 className="text-base font-semibold text-ink">Prompt de extracción</h2>
                 {promptEdited && (
                   <span className="rounded-full bg-surface px-2 py-0.5 text-[11px] font-semibold text-soft-blue">
-                    editado
+                    sin guardar
                   </span>
                 )}
               </div>
-              <button
-                type="button"
-                onClick={() => setPrompt(EXTRACTION_PROMPT)}
-                disabled={!promptEdited}
-                className="text-sm font-medium text-soft-blue underline-offset-2 hover:text-primary hover:underline disabled:text-disabled disabled:no-underline"
-              >
-                Restaurar original
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setPrompt(EXTRACTION_PROMPT)}
+                  disabled={promptIsDefault}
+                  className="text-sm font-medium text-soft-blue underline-offset-2 hover:text-primary hover:underline disabled:text-disabled disabled:no-underline"
+                >
+                  Restaurar original
+                </button>
+                <button
+                  type="button"
+                  onClick={savePrompt}
+                  disabled={saving || !promptEdited}
+                  className="inline-flex h-9 items-center gap-2 rounded-[10px] bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:bg-disabled"
+                >
+                  {saving ? (
+                    <>
+                      <Spinner className="h-4 w-4" /> Guardando…
+                    </>
+                  ) : (
+                    'Guardar'
+                  )}
+                </button>
+              </div>
             </div>
             <p className="text-xs text-muted">
               Estas instrucciones definen cómo la IA convierte el dictado en campos estructurados.
+              <strong className="font-medium"> Guardar</strong> persiste en SSM de prueba —
+              sobrevive el reload y <strong className="font-medium">no</strong> toca producción.
             </p>
+            {saveMsg && (
+              <p
+                className={`text-xs font-medium ${
+                  saveMsg.includes('✓') ? 'text-success' : 'text-danger'
+                }`}
+              >
+                {saveMsg}
+              </p>
+            )}
             <label htmlFor="prompt" className="sr-only">
               Prompt de extracción
             </label>
