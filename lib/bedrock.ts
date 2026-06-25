@@ -2,6 +2,7 @@
 // DexaVision pattern (dexa-backend/lambda/shared/services/bedrock.ts): InvokeModelCommand
 // + anthropic_version, cross-region inference profile, JSON parse with markdown-fence strip.
 import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedrock-runtime'
+import { awsCredentialsProvider } from '@vercel/oidc-aws-credentials-provider'
 
 const REGION = process.env.AWS_REGION || 'us-east-1'
 // Cross-region inference profile for high availability (matches DexaVision BEDROCK_MODELS).
@@ -9,7 +10,16 @@ const MODEL_ID = process.env.BEDROCK_MODEL_ID || 'us.anthropic.claude-haiku-4-5-
 
 let cachedClient: BedrockRuntimeClient | null = null
 function getClient(): BedrockRuntimeClient {
-  if (!cachedClient) cachedClient = new BedrockRuntimeClient({ region: REGION })
+  if (!cachedClient) {
+    cachedClient = new BedrockRuntimeClient({
+      region: REGION,
+      // On Vercel: assume the scoped role via OIDC (no static key). Locally (no
+      // AWS_ROLE_ARN): default credential chain / SSO. See infra/vercel-aws-oidc.md.
+      ...(process.env.AWS_ROLE_ARN
+        ? { credentials: awsCredentialsProvider({ roleArn: process.env.AWS_ROLE_ARN }) }
+        : {}),
+    })
+  }
   return cachedClient
 }
 

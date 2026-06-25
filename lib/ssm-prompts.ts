@@ -8,6 +8,7 @@ import {
   PutParameterCommand,
   ParameterNotFound,
 } from '@aws-sdk/client-ssm'
+import { awsCredentialsProvider } from '@vercel/oidc-aws-credentials-provider'
 import { EXTRACTION_PROMPT } from './extraction-schema'
 import { CONSISTENCY_PROMPT, SUMMARIZE_PROMPT } from './prompts'
 
@@ -26,7 +27,15 @@ export const PROMPT_DEFAULTS: Record<PromptKey, string> = {
 
 let cachedClient: SSMClient | null = null
 function getClient(): SSMClient {
-  if (!cachedClient) cachedClient = new SSMClient({ region: REGION })
+  if (!cachedClient) {
+    cachedClient = new SSMClient({
+      region: REGION,
+      // On Vercel: scoped role via OIDC (no static key). Locally: SSO / default chain.
+      ...(process.env.AWS_ROLE_ARN
+        ? { credentials: awsCredentialsProvider({ roleArn: process.env.AWS_ROLE_ARN }) }
+        : {}),
+    })
+  }
   return cachedClient
 }
 
