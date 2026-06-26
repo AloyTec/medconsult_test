@@ -63,10 +63,17 @@ IAM → **Identity providers** → **Add provider** → **OpenID Connect**:
       "Effect": "Allow",
       "Action": ["ssm:GetParameter", "ssm:PutParameter"],
       "Resource": "arn:aws:ssm:us-east-1:889268462469:parameter/medconsult/poc/prompts/*"
+    },
+    {
+      "Sid": "TranscribeStreaming",
+      "Effect": "Allow",
+      "Action": ["transcribe:StartStreamTranscription", "transcribe:StartStreamTranscriptionWebSocket"],
+      "Resource": "*"
     }
   ]
 }
 ```
+> Note: `transcribe:StartStreamTranscription*` doesn't support resource-level scoping, so `Resource: "*"` is required — keep the role otherwise minimal.
 Create + attach (IAM-admin profile):
 ```bash
 aws iam create-role --role-name medconsult-poc-vercel \
@@ -93,12 +100,22 @@ vercel env add AWS_REGION  production    # us-east-1
 `@vercel/oidc-aws-credentials-provider` **only when `AWS_ROLE_ARN` is set** (Vercel). Locally
 (no `AWS_ROLE_ARN`) they fall back to the default credential chain (your SSO). Nothing else to do.
 
-## 5. 🔒 Gate the URL before sharing (security decision)
-`POST /api/prompts` writes to SSM **without auth** (by design for the POC — test namespace, no
-prod impact). Before exposing the deploy to doctors, enable **Vercel Deployment Protection**
-(project → Settings → Deployment Protection → Vercel Authentication / Password) so only invited
-users reach the editor at all. This is the agreed gate (option 1). The **real admin** (writing to
-prod SSM) must instead have proper auth + admin-role + audit + versioning.
+## 5. 🔒 URL gate — REQUIRED, and BEFORE Step 3
+
+Two POC routes are intentionally **unauthenticated** and must NOT be publicly reachable:
+- `GET /api/aws-stt-creds` — **mints short-lived AWS creds** (scoped to this role: Bedrock + the
+  POC SSM namespace + Transcribe). An anonymous caller could otherwise obtain them.
+- `POST /api/prompts` — writes to the test SSM namespace (no prod impact, but still a write).
+
+**Enable Vercel Deployment Protection BEFORE you set `AWS_ROLE_ARN` (Step 3).** With no
+`AWS_ROLE_ARN`, the creds route returns 500 (can't mint anything) — so the safe order is: **gate
+the URL first, then enable AWS.** Project → Settings → **Deployment Protection** → Vercel
+Authentication (or Password). Only invited users reach the app — the agreed POC control (option 1).
+
+**Hardening (production):** scope the creds route down to a **Transcribe-only** role via an STS
+session policy (so leaked creds can't touch Bedrock/SSM), or switch it to return a **presigned
+Transcribe WebSocket URL** instead of credentials. The **real prompt admin** (writing to prod SSM)
+must have proper auth + admin-role + audit + versioning — never the unauthenticated POC routes.
 
 ## 6. Verify
 After Steps 1–3 + a redeploy: open `/prompts`, edit a prompt, **Guardar** → should return `ok`
