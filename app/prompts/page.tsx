@@ -54,6 +54,9 @@ export default function PromptPlaygroundPage() {
   const [latencyMs, setLatencyMs] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
   const [saveMsg, setSaveMsg] = useState<string | null>(null)
+  const [engine, setEngine] = useState<'openai' | 'bedrock'>('openai')
+  const [model, setModel] = useState('gpt-4o-mini')
+  const [models, setModels] = useState<string[]>([])
 
   // Load the saved prompt from the isolated test SSM namespace on mount; the API falls
   // back to the bundled default when nothing is saved yet.
@@ -68,6 +71,20 @@ export default function PromptPlaygroundPage() {
         }
       })
       .catch(() => {})
+  }, [])
+
+  // Load the selectable OpenAI models (the client wants to swap + test models).
+  useEffect(() => {
+    fetch('/api/models')
+      .then((r) => r.json())
+      .then((d) => {
+        if (Array.isArray(d?.models) && d.models.length > 0) {
+          setModels(d.models)
+          if (!d.models.includes(model)) setModel(d.models.includes('gpt-4o-mini') ? 'gpt-4o-mini' : d.models[0])
+        }
+      })
+      .catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const promptEdited = prompt !== baseline
@@ -98,7 +115,11 @@ export default function PromptPlaygroundPage() {
 
   // Live dictation (faithful to Flutter): mic → realtime transcript → 2s-debounced
   // extraction with the *current* (edited) prompt → fields fill in as you speak.
-  const voice = useVoiceRecording({ getPrompt: () => prompt })
+  const voice = useVoiceRecording({
+    getPrompt: () => prompt,
+    getEngine: () => engine,
+    getModel: () => (engine === 'openai' ? model : undefined),
+  })
   const recording = voice.state.isRecording
 
   useEffect(() => {
@@ -123,7 +144,12 @@ export default function PromptPlaygroundPage() {
       const res = await fetch('/api/extract', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transcript, prompt }),
+        body: JSON.stringify({
+          transcript,
+          prompt,
+          engine,
+          model: engine === 'openai' ? model : undefined,
+        }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -258,6 +284,46 @@ export default function PromptPlaygroundPage() {
               placeholder="Pega o escribe el dictado del médico (datos ficticios)…"
               className="field"
             />
+
+            {/* Motor de extracción: OpenAI (modelo seleccionable) | Bedrock Haiku */}
+            <div className="flex flex-wrap items-center gap-3 rounded-lg border border-stroke bg-surface/40 p-3">
+              <span className="text-xs font-semibold text-muted">Motor</span>
+              <div className="inline-flex rounded-lg border border-stroke bg-white p-0.5">
+                {(['openai', 'bedrock'] as const).map((e) => (
+                  <button
+                    key={e}
+                    type="button"
+                    onClick={() => setEngine(e)}
+                    className={`rounded-md px-3 py-1 text-xs font-semibold transition-colors ${
+                      engine === e ? 'bg-primary text-white' : 'text-muted hover:text-primary'
+                    }`}
+                  >
+                    {e === 'openai' ? 'OpenAI' : 'Bedrock (Haiku)'}
+                  </button>
+                ))}
+              </div>
+              {engine === 'openai' ? (
+                <label className="flex items-center gap-2 text-xs text-muted">
+                  Modelo
+                  <select
+                    value={model}
+                    onChange={(e) => setModel(e.target.value)}
+                    className="rounded-md border border-stroke bg-white px-2 py-1 text-xs text-ink focus:border-primary focus:outline-none"
+                  >
+                    {(models.length > 0 ? models : [model]).map((m) => (
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : (
+                <span className="font-mono text-[11px] text-muted">
+                  us.anthropic.claude-haiku-4-5
+                </span>
+              )}
+            </div>
+
             <div className="flex flex-wrap items-center gap-3 pt-1">
               <button
                 type="button"

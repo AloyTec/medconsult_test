@@ -13,7 +13,7 @@ const JSON_SHAPE = `Devuelve SOLO un objeto JSON con esta forma EXACTA (sin text
  * Matches Flutter's extractStructuredData() exactly.
  */
 export async function POST(req: NextRequest) {
-  const { transcript, prompt, engine } = await req.json()
+  const { transcript, prompt, engine, model } = await req.json()
 
   if (!transcript || typeof transcript !== 'string') {
     return NextResponse.json(
@@ -53,6 +53,10 @@ export async function POST(req: NextRequest) {
     )
   }
 
+  // The model is selectable from the UI (listed via /api/models). Default gpt-4o-mini.
+  const openaiModel =
+    typeof model === 'string' && model.trim().length > 0 ? model : 'gpt-4o-mini'
+
   try {
     const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
@@ -61,7 +65,7 @@ export async function POST(req: NextRequest) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: openaiModel,
         input: transcript,
         instructions,
         text: {
