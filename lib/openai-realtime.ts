@@ -23,7 +23,8 @@ export class OpenAIRealtimeClient {
   async connect(
     onTranscript: (text: string) => void,
     onError: (error: string) => void,
-    onTranscriptDelta?: (delta: string) => void
+    onTranscriptDelta?: (delta: string) => void,
+    options?: { sttPrompt?: string }
   ): Promise<MediaStream> {
     if (this.connected) throw new Error('Ya conectado a Realtime')
     this.onTranscript = onTranscript
@@ -58,7 +59,7 @@ export class OpenAIRealtimeClient {
       const res = await fetch('/api/realtime/sdp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sdp: offer.sdp }),
+        body: JSON.stringify({ sdp: offer.sdp, sttPrompt: options?.sttPrompt }),
       })
       if (!res.ok) {
         const j = await res.json().catch(() => ({}))

@@ -29,6 +29,9 @@ export async function GET() {
       sessionToken: creds.sessionToken,
       expiration: creds.expiration,
       region: process.env.AWS_REGION || 'us-east-1',
+      // Optional Transcribe custom vocabulary (created offline; see infra/transcribe-vocabulary/).
+      // Null until TRANSCRIBE_VOCABULARY_NAME is set in the env → Transcribe runs without it.
+      vocabularyName: process.env.TRANSCRIBE_VOCABULARY_NAME || null,
     })
   } catch (error) {
     console.error('aws-stt-creds error:', error)

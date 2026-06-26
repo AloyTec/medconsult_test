@@ -5,6 +5,7 @@
 import {
   SSMClient,
   GetParameterCommand,
+  GetParameterHistoryCommand,
   PutParameterCommand,
   ParameterNotFound,
 } from '@aws-sdk/client-ssm'
@@ -63,6 +64,46 @@ export async function readAllPrompts(): Promise<Record<PromptKey, PromptValue>> 
     PROMPT_KEYS.map(async (k) => [k, await readPrompt(k)] as const)
   )
   return Object.fromEntries(entries) as Record<PromptKey, PromptValue>
+}
+
+export interface PromptVersion {
+  version: number
+  lastModified: string // ISO string
+  value: string
+}
+
+/**
+ * Version history for a prompt. SSM auto-versions on every PutParameter (Overwrite),
+ * keeping up to 100 versions. Returned newest-first. Empty if nothing saved yet.
+ * Requires `ssm:GetParameterHistory` on the parameter (see infra/vercel-aws-oidc.md).
+ */
+export async function readPromptHistory(key: PromptKey): Promise<PromptVersion[]> {
+  const out: PromptVersion[] = []
+  let nextToken: string | undefined
+  try {
+    do {
+      const res = await getClient().send(
+        new GetParameterHistoryCommand({
+          Name: paramName(key),
+          WithDecryption: true,
+          MaxResults: 50,
+          NextToken: nextToken,
+        })
+      )
+      for (const p of res.Parameters ?? []) {
+        out.push({
+          version: p.Version ?? 0,
+          lastModified: p.LastModifiedDate?.toISOString() ?? '',
+          value: p.Value ?? '',
+        })
+      }
+      nextToken = res.NextToken
+    } while (nextToken)
+  } catch (err) {
+    if (err instanceof ParameterNotFound) return []
+    throw err
+  }
+  return out.sort((a, b) => b.version - a.version)
 }
 
 /** Persist a prompt to its test SSM parameter. Intelligent-Tiering handles >4KB prompts. */

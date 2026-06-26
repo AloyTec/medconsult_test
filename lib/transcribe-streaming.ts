@@ -74,7 +74,9 @@ export class TranscribeStreamClient {
     onTranscript: (text: string) => void,
     onError: (error: string) => void,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    _onTranscriptDelta?: (delta: string) => void
+    _onTranscriptDelta?: (delta: string) => void,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _options?: { sttPrompt?: string } // STT prompt no aplica a Transcribe (usa custom vocabulary)
   ): Promise<MediaStream> {
     if (this.connected) throw new Error('Ya conectado a Transcribe')
 
@@ -130,6 +132,9 @@ export class TranscribeStreamClient {
           MediaEncoding: 'pcm',
           MediaSampleRateHertz: TARGET_RATE,
           AudioStream: audioStream(),
+          // Custom vocabulary (medical/Chilean terms) when one is configured server-side.
+          // Must exist in the same region as the stream (see infra/transcribe-vocabulary/).
+          ...(creds.vocabularyName ? { VocabularyName: creds.vocabularyName } : {}),
         })
       )
     } catch (err) {

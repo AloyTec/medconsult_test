@@ -1,9 +1,17 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { EXTRACTION_PROMPT } from '@/lib/extraction-schema'
+import { DEFAULT_STT_PROMPT } from '@/lib/stt-vocabulary'
 import type { ExtractedData } from '@/lib/types'
 import { useVoiceRecording } from '@/lib/hooks/useVoiceRecording'
+
+interface PromptVersion {
+  version: number
+  lastModified: string
+  value: string
+}
 import { DataExtraction } from '../components/DataExtraction'
 import { IconSparkles, IconTranscript, IconClipboardCheck, IconMic, Spinner } from '../components/icons'
 
@@ -66,6 +74,12 @@ export default function PromptPlaygroundPage() {
   const [models, setModels] = useState<string[]>([])
   const [bedrockModel, setBedrockModel] = useState(BEDROCK_MODELS[0].id)
   const [stt, setStt] = useState<'openai' | 'transcribe'>('openai')
+  const [sttPrompt, setSttPrompt] = useState(DEFAULT_STT_PROMPT)
+  // Historial de versiones (SSM versiona en cada Guardar).
+  const [historyOpen, setHistoryOpen] = useState(false)
+  const [history, setHistory] = useState<PromptVersion[]>([])
+  const [historyLoading, setHistoryLoading] = useState(false)
+  const [historyError, setHistoryError] = useState<string | null>(null)
 
   // Load the saved prompt from the isolated test SSM namespace on mount; the API falls
   // back to the bundled default when nothing is saved yet.
@@ -115,11 +129,44 @@ export default function PromptPlaygroundPage() {
       }
       setBaseline(prompt)
       setSaveMsg('Guardado en SSM ✓')
+      if (historyOpen) loadHistory() // refresh so the new version shows up
     } catch {
       setSaveMsg('No se pudo guardar (problema de red).')
     } finally {
       setSaving(false)
     }
+  }
+
+  async function loadHistory() {
+    setHistoryLoading(true)
+    setHistoryError(null)
+    try {
+      const res = await fetch('/api/prompts/history?key=extraction')
+      const data = await res.json()
+      if (!res.ok) {
+        setHistoryError(data?.error ?? `No se pudo cargar el historial (${res.status}).`)
+        setHistory([])
+        return
+      }
+      setHistory(Array.isArray(data?.versions) ? data.versions : [])
+    } catch {
+      setHistoryError('No se pudo cargar el historial (problema de red).')
+      setHistory([])
+    } finally {
+      setHistoryLoading(false)
+    }
+  }
+
+  function toggleHistory() {
+    const next = !historyOpen
+    setHistoryOpen(next)
+    if (next) loadHistory()
+  }
+
+  function loadVersion(v: PromptVersion) {
+    setPrompt(v.value)
+    setHistoryOpen(false)
+    setSaveMsg(`Cargada la versión ${v.version} en el editor (aún sin guardar).`)
   }
 
   // Live dictation (faithful to Flutter): mic → realtime transcript → 2s-debounced
@@ -129,6 +176,7 @@ export default function PromptPlaygroundPage() {
     getEngine: () => engine,
     getModel: () => (engine === 'openai' ? model : bedrockModel),
     getStt: () => stt,
+    getSttPrompt: () => sttPrompt,
   })
   const recording = voice.state.isRecording
 
@@ -186,12 +234,51 @@ export default function PromptPlaygroundPage() {
           Ajusta cómo la IA entiende el dictado
         </h1>
         <p className="max-w-2xl text-sm leading-relaxed text-muted">
-          Edita el prompt de extracción y mira, al instante, cómo se llenan los campos clínicos
-          sobre la misma transcripción. Itera sin volver a grabar. La extracción corre en el
-          servidor (la clave nunca llega al navegador).{' '}
-          <span className="font-medium text-soft-blue">
-            Usa los ejemplos: no ingreses datos de pacientes reales.
-          </span>
+          Aquí pruebas y afinas las instrucciones que sigue la IA para llenar la ficha clínica a
+          partir de tu dictado. En 4 pasos:
+        </p>
+        <ol className="max-w-2xl list-none space-y-2 text-sm leading-relaxed text-ink">
+          <li className="flex gap-3">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface text-xs font-bold text-primary">
+              1
+            </span>
+            <span>
+              <strong>Graba tu dictado una vez</strong> con el botón <em>Dictar</em>, o elige un
+              ejemplo ya preparado.
+            </span>
+          </li>
+          <li className="flex gap-3">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface text-xs font-bold text-primary">
+              2
+            </span>
+            <span>
+              Presiona <strong>Extraer</strong> y observa cómo se llenan los campos clínicos
+              (paciente, antecedentes, diagnóstico, plan…).
+            </span>
+          </li>
+          <li className="flex gap-3">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface text-xs font-bold text-primary">
+              3
+            </span>
+            <span>
+              <strong>Edita el prompt</strong> (las instrucciones de la IA) y vuelve a{' '}
+              <strong>Extraer</strong>: verás cómo cambia el resultado sobre el mismo dictado, sin
+              volver a grabar.
+            </span>
+          </li>
+          <li className="flex gap-3">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface text-xs font-bold text-primary">
+              4
+            </span>
+            <span>
+              Cuando un prompt te convenza, presiona <strong>Guardar</strong>. Cada vez que guardas
+              se crea una <strong>nueva versión</strong> que puedes recuperar después con{' '}
+              <em>Ver versiones</em>.
+            </span>
+          </li>
+        </ol>
+        <p className="max-w-2xl text-sm font-medium text-soft-blue">
+          Usa siempre datos de pacientes ficticios — no ingreses información de pacientes reales.
         </p>
       </header>
 
@@ -211,6 +298,13 @@ export default function PromptPlaygroundPage() {
                 )}
               </div>
               <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={toggleHistory}
+                  className="text-sm font-medium text-soft-blue underline-offset-2 hover:text-primary hover:underline"
+                >
+                  Ver versiones
+                </button>
                 <button
                   type="button"
                   onClick={() => setPrompt(EXTRACTION_PROMPT)}
@@ -237,8 +331,10 @@ export default function PromptPlaygroundPage() {
             </div>
             <p className="text-xs text-muted">
               Estas instrucciones definen cómo la IA convierte el dictado en campos estructurados.
-              <strong className="font-medium"> Guardar</strong> persiste en SSM de prueba —
-              sobrevive el reload y <strong className="font-medium">no</strong> toca producción.
+              Cada <strong className="font-medium">Guardar</strong> crea una{' '}
+              <strong className="font-medium">nueva versión</strong> (puedes volver a una anterior
+              con <strong className="font-medium">Ver versiones</strong>). Es un entorno de prueba:
+              no afecta la app de los doctores.
             </p>
             {saveMsg && (
               <p
@@ -249,6 +345,60 @@ export default function PromptPlaygroundPage() {
                 {saveMsg}
               </p>
             )}
+
+            {/* Historial de versiones (SSM). Click en una versión → la carga en el editor. */}
+            {historyOpen && (
+              <div className="rounded-lg border border-stroke bg-surface/40 p-3">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-xs font-semibold text-ink">
+                    Versiones guardadas (más reciente primero)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setHistoryOpen(false)}
+                    className="text-xs font-medium text-muted hover:text-primary"
+                  >
+                    Cerrar
+                  </button>
+                </div>
+                {historyLoading && (
+                  <p className="flex items-center gap-2 text-xs text-muted">
+                    <Spinner className="h-3.5 w-3.5" /> Cargando historial…
+                  </p>
+                )}
+                {historyError && <p className="text-xs text-danger">{historyError}</p>}
+                {!historyLoading && !historyError && history.length === 0 && (
+                  <p className="text-xs text-muted">
+                    Todavía no hay versiones guardadas. Edita el prompt y presiona Guardar.
+                  </p>
+                )}
+                {!historyLoading && history.length > 0 && (
+                  <ul className="space-y-1.5">
+                    {history.map((v) => (
+                      <li key={v.version}>
+                        <button
+                          type="button"
+                          onClick={() => loadVersion(v)}
+                          className="flex w-full items-start gap-3 rounded-md border border-stroke bg-white px-3 py-2 text-left transition-colors hover:border-primary"
+                        >
+                          <span className="shrink-0 rounded-full bg-surface px-2 py-0.5 text-[11px] font-bold text-primary">
+                            v{v.version}
+                          </span>
+                          <span className="min-w-0">
+                            <span className="block text-[11px] text-muted">{v.lastModified}</span>
+                            <span className="block truncate text-xs text-ink">
+                              {v.value.slice(0, 90)}
+                              {v.value.length > 90 ? '…' : ''}
+                            </span>
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+
             <label htmlFor="prompt" className="sr-only">
               Prompt de extracción
             </label>
@@ -370,6 +520,39 @@ export default function PromptPlaygroundPage() {
                   ))}
                 </div>
               </div>
+
+              {/* Fila 3 — Vocabulario del dictado. OpenAI: campo editable; Transcribe: diccionario aparte. */}
+              {stt === 'openai' ? (
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-xs font-semibold text-muted">
+                    Vocabulario del dictado (OpenAI)
+                  </span>
+                  <textarea
+                    value={sttPrompt}
+                    onChange={(e) => setSttPrompt(e.target.value)}
+                    disabled={recording}
+                    rows={4}
+                    spellCheck={false}
+                    className="field text-xs leading-relaxed disabled:opacity-60"
+                    placeholder="Términos que el dictado debe reconocer bien (fármacos, abreviaturas, anatomía)…"
+                  />
+                  <span className="text-[11px] text-muted">
+                    Le indica al reconocedor de voz qué términos clínicos/chilenos esperar. Edítalo y
+                    vuelve a dictar para comparar.
+                  </span>
+                </div>
+              ) : (
+                <p className="text-[11px] leading-relaxed text-muted">
+                  AWS Transcribe se afina con un <strong>diccionario propio</strong> que se crea una
+                  sola vez en AWS, no desde aquí.{' '}
+                  <Link
+                    href="/diccionario"
+                    className="font-semibold text-soft-blue underline-offset-2 hover:text-primary hover:underline"
+                  >
+                    Ver diccionario recomendado →
+                  </Link>
+                </p>
+              )}
             </div>
 
             <div className="flex flex-wrap items-center gap-3 pt-1">

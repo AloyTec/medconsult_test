@@ -12,6 +12,7 @@ export function useVoiceRecording(options?: {
   getEngine?: () => string | undefined
   getModel?: () => string | undefined
   getStt?: () => 'openai' | 'transcribe'
+  getSttPrompt?: () => string | undefined
 }) {
   // Keep the latest getters in refs so changes during recording are picked up.
   const getPromptRef = useRef(options?.getPrompt)
@@ -22,6 +23,8 @@ export function useVoiceRecording(options?: {
   getModelRef.current = options?.getModel
   const getSttRef = useRef(options?.getStt)
   getSttRef.current = options?.getStt
+  const getSttPromptRef = useRef(options?.getSttPrompt)
+  getSttPromptRef.current = options?.getSttPrompt
 
   const [state, setState] = useState<RecordingState>({
     isRecording: false,
@@ -89,7 +92,9 @@ export function useVoiceRecording(options?: {
             ...prev,
             liveTranscript: prev.liveTranscript + delta,
           }))
-        }
+        },
+        // STT vocabulary bias (OpenAI only; Transcribe ignores it and uses a custom vocabulary)
+        { sttPrompt: getSttPromptRef.current?.() }
       )
       console.log('🔍 [DEBUG] useVoiceRecording: Connected, got mediaStream with', mediaStream.getTracks().length, 'tracks')
 

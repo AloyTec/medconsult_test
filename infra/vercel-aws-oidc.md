@@ -66,7 +66,7 @@ IAM → **Identity providers** → **Add provider** → **OpenID Connect**:
     {
       "Sid": "PocPromptsSsm",
       "Effect": "Allow",
-      "Action": ["ssm:GetParameter", "ssm:PutParameter"],
+      "Action": ["ssm:GetParameter", "ssm:GetParameterHistory", "ssm:PutParameter"],
       "Resource": "arn:aws:ssm:us-east-1:889268462469:parameter/medconsult/poc/prompts/*"
     },
     {

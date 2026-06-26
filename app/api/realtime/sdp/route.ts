@@ -11,15 +11,22 @@ import { NextRequest, NextResponse } from 'next/server'
  * Mirrors the Flutter app exactly (openai_realtime_webrtc_service.dart:113-145):
  * model gpt-realtime-2, text-only output, Spanish transcription via gpt-4o-mini-transcribe.
  */
-const SESSION = {
-  type: 'realtime',
-  model: 'gpt-realtime-2',
-  output_modalities: ['text'],
-  audio: {
-    input: {
-      transcription: { language: 'es', model: 'gpt-4o-mini-transcribe' },
-    },
-  },
+// Base session config. `transcription.prompt` (optional) biases the STT toward the
+// expected vocabulary — set per-request from the (editable) STT prompt field in the UI.
+function buildSession(sttPrompt?: string) {
+  const transcription: Record<string, unknown> = {
+    language: 'es',
+    model: 'gpt-4o-mini-transcribe',
+  }
+  if (typeof sttPrompt === 'string' && sttPrompt.trim().length > 0) {
+    transcription.prompt = sttPrompt.trim()
+  }
+  return {
+    type: 'realtime',
+    model: 'gpt-realtime-2',
+    output_modalities: ['text'],
+    audio: { input: { transcription } },
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -31,14 +38,14 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const { sdp } = await req.json()
+  const { sdp, sttPrompt } = await req.json()
   if (!sdp || typeof sdp !== 'string') {
     return NextResponse.json({ error: 'Falta el SDP offer.' }, { status: 400 })
   }
 
   const form = new FormData()
   form.append('sdp', sdp)
-  form.append('session', JSON.stringify(SESSION))
+  form.append('session', JSON.stringify(buildSession(sttPrompt)))
 
   try {
     const res = await fetch('https://api.openai.com/v1/realtime/calls', {
