@@ -3,6 +3,7 @@ import Link from 'next/link'
 import './globals.css'
 import { LogoMark, IconSparkles } from './components/icons'
 import { NavLink } from './components/NavLink'
+import { ResetButton } from './components/ResetButton'
 
 export const metadata: Metadata = {
   title: 'MedConsult — Estudio de prompts clínicos',
@@ -33,10 +34,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <span className="block text-[11px] text-muted">Estudio de prompts clínicos</span>
               </span>
             </Link>
-            <nav className="flex items-center gap-1">
+            <nav className="flex items-center gap-2">
               <NavLink href="/prompts">
                 <IconSparkles className="h-4 w-4" /> Editor de prompts
               </NavLink>
+              <ResetButton />
             </nav>
           </div>
         </header>
