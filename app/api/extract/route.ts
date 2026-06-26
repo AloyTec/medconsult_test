@@ -13,7 +13,7 @@ const JSON_SHAPE = `Devuelve SOLO un objeto JSON con esta forma EXACTA (sin text
  * Matches Flutter's extractStructuredData() exactly.
  */
 export async function POST(req: NextRequest) {
-  const { transcript, prompt, engine } = await req.json()
+  const { transcript, prompt, engine, model } = await req.json()
 
   if (!transcript || typeof transcript !== 'string') {
     return NextResponse.json(
@@ -30,10 +30,17 @@ export async function POST(req: NextRequest) {
       ? prompt
       : EXTRACTION_PROMPT
 
-  // ── AWS Bedrock lane (Claude Haiku 4.5, IAM-scoped — no API key) ──
+  // ── AWS Bedrock lane (Claude Haiku/Sonnet/Opus, IAM-scoped — no API key) ──
   if (engine === 'bedrock') {
     try {
-      const result = await invokeClaudeJson(`${instructions}\n\n${JSON_SHAPE}`, transcript, 1024)
+      const bedrockModel =
+        typeof model === 'string' && model.trim().length > 0 ? model : undefined
+      const result = await invokeClaudeJson(
+        `${instructions}\n\n${JSON_SHAPE}`,
+        transcript,
+        1024,
+        bedrockModel
+      )
       return NextResponse.json(result)
     } catch (error) {
       console.error('Bedrock extraction error:', error)
@@ -53,6 +60,10 @@ export async function POST(req: NextRequest) {
     )
   }
 
+  // The model is selectable from the UI (listed via /api/models). Default gpt-4o-mini.
+  const openaiModel =
+    typeof model === 'string' && model.trim().length > 0 ? model : 'gpt-4o-mini'
+
   try {
     const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
@@ -61,7 +72,7 @@ export async function POST(req: NextRequest) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: openaiModel,
         input: transcript,
         instructions,
         text: {

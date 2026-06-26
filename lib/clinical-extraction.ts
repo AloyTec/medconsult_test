@@ -13,15 +13,21 @@ export class ClinicalExtractionService {
   private onExtracted: ((data: ExtractedData) => void) | null = null
   private onExtracting: ((isExtracting: boolean) => void) | null = null
   private getPrompt: (() => string | undefined) | null = null
+  private getEngine: (() => string | undefined) | null = null
+  private getModel: (() => string | undefined) | null = null
 
   constructor(
     onExtracted: (data: ExtractedData) => void,
     onExtracting: (isExtracting: boolean) => void,
-    getPrompt?: () => string | undefined
+    getPrompt?: () => string | undefined,
+    getEngine?: () => string | undefined,
+    getModel?: () => string | undefined
   ) {
     this.onExtracted = onExtracted
     this.onExtracting = onExtracting
     this.getPrompt = getPrompt ?? null
+    this.getEngine = getEngine ?? null
+    this.getModel = getModel ?? null
   }
 
   /**
@@ -50,13 +56,15 @@ export class ClinicalExtractionService {
     const currentJobId = ++this.jobId
     this.onExtracting?.(true)
 
-    // The live prompt (if the caller provides one) so on-the-fly prompt edits
-    // take effect on the next extraction. Blank/absent → server uses the default.
+    // Live prompt / engine / model so on-the-fly changes take effect on the next
+    // extraction. Blank/absent → server uses its defaults.
     const prompt = this.getPrompt?.()
-    const payload =
-      prompt && prompt.trim().length > 0
-        ? { transcript: this.buffer, prompt }
-        : { transcript: this.buffer }
+    const engine = this.getEngine?.()
+    const model = this.getModel?.()
+    const payload: Record<string, unknown> = { transcript: this.buffer }
+    if (prompt && prompt.trim().length > 0) payload.prompt = prompt
+    if (engine) payload.engine = engine
+    if (model) payload.model = model
 
     try {
       const response = await fetch('/api/extract', {

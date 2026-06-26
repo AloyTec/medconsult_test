@@ -1,0 +1,120 @@
+// Server-only. Reads/writes the POC prompts in a DEDICATED, ISOLATED SSM namespace
+// (/medconsult/poc/prompts/*) — separate from the real /medconsult/{dev,prd}/prompts/*,
+// so persisting here NEVER affects the deployed backend behavior. Replicates the real
+// admin mechanism (read/write SSM) against test parameters.
+import {
+  SSMClient,
+  GetParameterCommand,
+  GetParameterHistoryCommand,
+  PutParameterCommand,
+  ParameterNotFound,
+} from '@aws-sdk/client-ssm'
+import { awsCredentialsProvider } from '@vercel/oidc-aws-credentials-provider'
+import { EXTRACTION_PROMPT } from './extraction-schema'
+import { CONSISTENCY_PROMPT, SUMMARIZE_PROMPT } from './prompts'
+
+const REGION = process.env.AWS_REGION || 'us-east-1'
+const PREFIX = '/medconsult/poc/prompts'
+
+export type PromptKey = 'extraction' | 'consistency' | 'summarize'
+export const PROMPT_KEYS: PromptKey[] = ['extraction', 'consistency', 'summarize']
+
+// Bundled defaults — what the editor shows until a value is saved to SSM.
+export const PROMPT_DEFAULTS: Record<PromptKey, string> = {
+  extraction: EXTRACTION_PROMPT,
+  consistency: CONSISTENCY_PROMPT,
+  summarize: SUMMARIZE_PROMPT,
+}
+
+let cachedClient: SSMClient | null = null
+function getClient(): SSMClient {
+  if (!cachedClient) {
+    cachedClient = new SSMClient({
+      region: REGION,
+      // On Vercel: scoped role via OIDC (no static key). Locally: SSO / default chain.
+      ...(process.env.AWS_ROLE_ARN
+        ? { credentials: awsCredentialsProvider({ roleArn: process.env.AWS_ROLE_ARN }) }
+        : {}),
+    })
+  }
+  return cachedClient
+}
+
+const paramName = (key: PromptKey) => `${PREFIX}/${key}`
+
+export interface PromptValue {
+  value: string
+  source: 'ssm' | 'default'
+}
+
+/** SSM value if a saved one exists, else the bundled default. */
+export async function readPrompt(key: PromptKey): Promise<PromptValue> {
+  try {
+    const res = await getClient().send(new GetParameterCommand({ Name: paramName(key) }))
+    const value = res.Parameter?.Value
+    if (value) return { value, source: 'ssm' }
+  } catch (err) {
+    if (!(err instanceof ParameterNotFound)) throw err
+  }
+  return { value: PROMPT_DEFAULTS[key], source: 'default' }
+}
+
+export async function readAllPrompts(): Promise<Record<PromptKey, PromptValue>> {
+  const entries = await Promise.all(
+    PROMPT_KEYS.map(async (k) => [k, await readPrompt(k)] as const)
+  )
+  return Object.fromEntries(entries) as Record<PromptKey, PromptValue>
+}
+
+export interface PromptVersion {
+  version: number
+  lastModified: string // ISO string
+  value: string
+}
+
+/**
+ * Version history for a prompt. SSM auto-versions on every PutParameter (Overwrite),
+ * keeping up to 100 versions. Returned newest-first. Empty if nothing saved yet.
+ * Requires `ssm:GetParameterHistory` on the parameter (see infra/vercel-aws-oidc.md).
+ */
+export async function readPromptHistory(key: PromptKey): Promise<PromptVersion[]> {
+  const out: PromptVersion[] = []
+  let nextToken: string | undefined
+  try {
+    do {
+      const res = await getClient().send(
+        new GetParameterHistoryCommand({
+          Name: paramName(key),
+          WithDecryption: true,
+          MaxResults: 50,
+          NextToken: nextToken,
+        })
+      )
+      for (const p of res.Parameters ?? []) {
+        out.push({
+          version: p.Version ?? 0,
+          lastModified: p.LastModifiedDate?.toISOString() ?? '',
+          value: p.Value ?? '',
+        })
+      }
+      nextToken = res.NextToken
+    } while (nextToken)
+  } catch (err) {
+    if (err instanceof ParameterNotFound) return []
+    throw err
+  }
+  return out.sort((a, b) => b.version - a.version)
+}
+
+/** Persist a prompt to its test SSM parameter. Intelligent-Tiering handles >4KB prompts. */
+export async function writePrompt(key: PromptKey, value: string): Promise<void> {
+  await getClient().send(
+    new PutParameterCommand({
+      Name: paramName(key),
+      Value: value,
+      Type: 'String',
+      Overwrite: true,
+      Tier: 'Intelligent-Tiering',
+    })
+  )
+}

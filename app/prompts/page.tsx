@@ -1,9 +1,17 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { EXTRACTION_PROMPT } from '@/lib/extraction-schema'
+import { DEFAULT_STT_PROMPT } from '@/lib/stt-vocabulary'
 import type { ExtractedData } from '@/lib/types'
 import { useVoiceRecording } from '@/lib/hooks/useVoiceRecording'
+
+interface PromptVersion {
+  version: number
+  lastModified: string
+  value: string
+}
 import { DataExtraction } from '../components/DataExtraction'
 import { IconSparkles, IconTranscript, IconClipboardCheck, IconMic, Spinner } from '../components/icons'
 
@@ -44,19 +52,132 @@ const SAMPLE_TRANSCRIPTS: { label: string; text: string }[] = [
   },
 ]
 
+// Modelos de Bedrock seleccionables (inference profiles us.* cross-region).
+const BEDROCK_MODELS = [
+  { id: 'us.anthropic.claude-haiku-4-5-20251001-v1:0', label: 'Haiku 4.5 · rápido y económico' },
+  { id: 'us.anthropic.claude-sonnet-4-6', label: 'Sonnet 4.6 · balanceado' },
+  { id: 'us.anthropic.claude-opus-4-6-v1', label: 'Opus 4.6 · máxima calidad' },
+]
+
 export default function PromptPlaygroundPage() {
   const [prompt, setPrompt] = useState(EXTRACTION_PROMPT)
+  const [baseline, setBaseline] = useState(EXTRACTION_PROMPT) // last loaded/saved value (from SSM)
   const [transcript, setTranscript] = useState('')
   const [result, setResult] = useState<ExtractedData | null>(null)
   const [isExtracting, setIsExtracting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [latencyMs, setLatencyMs] = useState<number | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [saveMsg, setSaveMsg] = useState<string | null>(null)
+  const [engine, setEngine] = useState<'openai' | 'bedrock'>('openai')
+  const [model, setModel] = useState('gpt-4o-mini')
+  const [models, setModels] = useState<string[]>([])
+  const [bedrockModel, setBedrockModel] = useState(BEDROCK_MODELS[0].id)
+  const [stt, setStt] = useState<'openai' | 'transcribe'>('openai')
+  const [sttPrompt, setSttPrompt] = useState(DEFAULT_STT_PROMPT)
+  // Historial de versiones (SSM versiona en cada Guardar).
+  const [historyOpen, setHistoryOpen] = useState(false)
+  const [history, setHistory] = useState<PromptVersion[]>([])
+  const [historyLoading, setHistoryLoading] = useState(false)
+  const [historyError, setHistoryError] = useState<string | null>(null)
 
-  const promptEdited = prompt !== EXTRACTION_PROMPT
+  // Load the saved prompt from the isolated test SSM namespace on mount; the API falls
+  // back to the bundled default when nothing is saved yet.
+  useEffect(() => {
+    fetch('/api/prompts')
+      .then((r) => r.json())
+      .then((d) => {
+        const v = d?.prompts?.extraction?.value
+        if (typeof v === 'string' && v.length > 0) {
+          setPrompt(v)
+          setBaseline(v)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  // Load the selectable OpenAI models (the client wants to swap + test models).
+  useEffect(() => {
+    fetch('/api/models')
+      .then((r) => r.json())
+      .then((d) => {
+        if (Array.isArray(d?.models) && d.models.length > 0) {
+          setModels(d.models)
+          if (!d.models.includes(model)) setModel(d.models.includes('gpt-4o-mini') ? 'gpt-4o-mini' : d.models[0])
+        }
+      })
+      .catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const promptEdited = prompt !== baseline
+  const promptIsDefault = prompt === EXTRACTION_PROMPT
+
+  async function savePrompt() {
+    setSaving(true)
+    setSaveMsg(null)
+    try {
+      const res = await fetch('/api/prompts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'extraction', value: prompt }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setSaveMsg(data?.error ?? `Error al guardar (${res.status})`)
+        return
+      }
+      setBaseline(prompt)
+      setSaveMsg('Guardado en SSM ✓')
+      if (historyOpen) loadHistory() // refresh so the new version shows up
+    } catch {
+      setSaveMsg('No se pudo guardar (problema de red).')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function loadHistory() {
+    setHistoryLoading(true)
+    setHistoryError(null)
+    try {
+      const res = await fetch('/api/prompts/history?key=extraction')
+      const data = await res.json()
+      if (!res.ok) {
+        setHistoryError(data?.error ?? `No se pudo cargar el historial (${res.status}).`)
+        setHistory([])
+        return
+      }
+      setHistory(Array.isArray(data?.versions) ? data.versions : [])
+    } catch {
+      setHistoryError('No se pudo cargar el historial (problema de red).')
+      setHistory([])
+    } finally {
+      setHistoryLoading(false)
+    }
+  }
+
+  function toggleHistory() {
+    const next = !historyOpen
+    setHistoryOpen(next)
+    if (next) loadHistory()
+  }
+
+  function loadVersion(v: PromptVersion) {
+    setPrompt(v.value)
+    setHistoryOpen(false)
+    setSaveMsg(`Cargada la versión ${v.version} en el editor (aún sin guardar).`)
+  }
 
   // Live dictation (faithful to Flutter): mic → realtime transcript → 2s-debounced
   // extraction with the *current* (edited) prompt → fields fill in as you speak.
-  const voice = useVoiceRecording({ getPrompt: () => prompt })
+  const voice = useVoiceRecording({
+    getPrompt: () => prompt,
+    getEngine: () => engine,
+    getModel: () => (engine === 'openai' ? model : bedrockModel),
+    getStt: () => stt,
+    getSttPrompt: () => sttPrompt,
+  })
   const recording = voice.state.isRecording
 
   useEffect(() => {
@@ -81,7 +202,12 @@ export default function PromptPlaygroundPage() {
       const res = await fetch('/api/extract', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transcript, prompt }),
+        body: JSON.stringify({
+          transcript,
+          prompt,
+          engine,
+          model: engine === 'openai' ? model : bedrockModel,
+        }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -108,12 +234,51 @@ export default function PromptPlaygroundPage() {
           Ajusta cómo la IA entiende el dictado
         </h1>
         <p className="max-w-2xl text-sm leading-relaxed text-muted">
-          Edita el prompt de extracción y mira, al instante, cómo se llenan los campos clínicos
-          sobre la misma transcripción. Itera sin volver a grabar. La extracción corre en el
-          servidor (la clave nunca llega al navegador).{' '}
-          <span className="font-medium text-soft-blue">
-            Usa los ejemplos: no ingreses datos de pacientes reales.
-          </span>
+          Aquí pruebas y afinas las instrucciones que sigue la IA para llenar la ficha clínica a
+          partir de tu dictado. En 4 pasos:
+        </p>
+        <ol className="max-w-2xl list-none space-y-2 text-sm leading-relaxed text-ink">
+          <li className="flex gap-3">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface text-xs font-bold text-primary">
+              1
+            </span>
+            <span>
+              <strong>Graba tu dictado una vez</strong> con el botón <em>Dictar</em>, o elige un
+              ejemplo ya preparado.
+            </span>
+          </li>
+          <li className="flex gap-3">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface text-xs font-bold text-primary">
+              2
+            </span>
+            <span>
+              Presiona <strong>Extraer</strong> y observa cómo se llenan los campos clínicos
+              (paciente, antecedentes, diagnóstico, plan…).
+            </span>
+          </li>
+          <li className="flex gap-3">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface text-xs font-bold text-primary">
+              3
+            </span>
+            <span>
+              <strong>Edita el prompt</strong> (las instrucciones de la IA) y vuelve a{' '}
+              <strong>Extraer</strong>: verás cómo cambia el resultado sobre el mismo dictado, sin
+              volver a grabar.
+            </span>
+          </li>
+          <li className="flex gap-3">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface text-xs font-bold text-primary">
+              4
+            </span>
+            <span>
+              Cuando un prompt te convenza, presiona <strong>Guardar</strong>. Cada vez que guardas
+              se crea una <strong>nueva versión</strong> que puedes recuperar después con{' '}
+              <em>Ver versiones</em>.
+            </span>
+          </li>
+        </ol>
+        <p className="max-w-2xl text-sm font-medium text-soft-blue">
+          Usa siempre datos de pacientes ficticios — no ingreses información de pacientes reales.
         </p>
       </header>
 
@@ -128,22 +293,112 @@ export default function PromptPlaygroundPage() {
                 <h2 className="text-base font-semibold text-ink">Prompt de extracción</h2>
                 {promptEdited && (
                   <span className="rounded-full bg-surface px-2 py-0.5 text-[11px] font-semibold text-soft-blue">
-                    editado
+                    sin guardar
                   </span>
                 )}
               </div>
-              <button
-                type="button"
-                onClick={() => setPrompt(EXTRACTION_PROMPT)}
-                disabled={!promptEdited}
-                className="text-sm font-medium text-soft-blue underline-offset-2 hover:text-primary hover:underline disabled:text-disabled disabled:no-underline"
-              >
-                Restaurar original
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={toggleHistory}
+                  className="text-sm font-medium text-soft-blue underline-offset-2 hover:text-primary hover:underline"
+                >
+                  Ver versiones
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPrompt(EXTRACTION_PROMPT)}
+                  disabled={promptIsDefault}
+                  className="text-sm font-medium text-soft-blue underline-offset-2 hover:text-primary hover:underline disabled:text-disabled disabled:no-underline"
+                >
+                  Restaurar original
+                </button>
+                <button
+                  type="button"
+                  onClick={savePrompt}
+                  disabled={saving || !promptEdited}
+                  className="inline-flex h-9 items-center gap-2 rounded-[10px] bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:bg-disabled"
+                >
+                  {saving ? (
+                    <>
+                      <Spinner className="h-4 w-4" /> Guardando…
+                    </>
+                  ) : (
+                    'Guardar'
+                  )}
+                </button>
+              </div>
             </div>
             <p className="text-xs text-muted">
               Estas instrucciones definen cómo la IA convierte el dictado en campos estructurados.
+              Cada <strong className="font-medium">Guardar</strong> crea una{' '}
+              <strong className="font-medium">nueva versión</strong> (puedes volver a una anterior
+              con <strong className="font-medium">Ver versiones</strong>). Es un entorno de prueba:
+              no afecta la app de los doctores.
             </p>
+            {saveMsg && (
+              <p
+                className={`text-xs font-medium ${
+                  saveMsg.includes('✓') ? 'text-success' : 'text-danger'
+                }`}
+              >
+                {saveMsg}
+              </p>
+            )}
+
+            {/* Historial de versiones (SSM). Click en una versión → la carga en el editor. */}
+            {historyOpen && (
+              <div className="rounded-lg border border-stroke bg-surface/40 p-3">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-xs font-semibold text-ink">
+                    Versiones guardadas (más reciente primero)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setHistoryOpen(false)}
+                    className="text-xs font-medium text-muted hover:text-primary"
+                  >
+                    Cerrar
+                  </button>
+                </div>
+                {historyLoading && (
+                  <p className="flex items-center gap-2 text-xs text-muted">
+                    <Spinner className="h-3.5 w-3.5" /> Cargando historial…
+                  </p>
+                )}
+                {historyError && <p className="text-xs text-danger">{historyError}</p>}
+                {!historyLoading && !historyError && history.length === 0 && (
+                  <p className="text-xs text-muted">
+                    Todavía no hay versiones guardadas. Edita el prompt y presiona Guardar.
+                  </p>
+                )}
+                {!historyLoading && history.length > 0 && (
+                  <ul className="space-y-1.5">
+                    {history.map((v) => (
+                      <li key={v.version}>
+                        <button
+                          type="button"
+                          onClick={() => loadVersion(v)}
+                          className="flex w-full items-start gap-3 rounded-md border border-stroke bg-white px-3 py-2 text-left transition-colors hover:border-primary"
+                        >
+                          <span className="shrink-0 rounded-full bg-surface px-2 py-0.5 text-[11px] font-bold text-primary">
+                            v{v.version}
+                          </span>
+                          <span className="min-w-0">
+                            <span className="block text-[11px] text-muted">{v.lastModified}</span>
+                            <span className="block truncate text-xs text-ink">
+                              {v.value.slice(0, 90)}
+                              {v.value.length > 90 ? '…' : ''}
+                            </span>
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+
             <label htmlFor="prompt" className="sr-only">
               Prompt de extracción
             </label>
@@ -189,6 +444,117 @@ export default function PromptPlaygroundPage() {
               placeholder="Pega o escribe el dictado del médico (datos ficticios)…"
               className="field"
             />
+
+            {/* Controles: una fila por control (IA de extracción / Motor de dictado). */}
+            <div className="flex flex-col gap-2.5 rounded-lg border border-stroke bg-surface/40 p-3">
+              {/* Fila 1 — IA de extracción: OpenAI (modelo seleccionable) | Bedrock (Haiku/Sonnet/Opus) */}
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="w-full text-xs font-semibold text-muted sm:w-56">
+                  IA para extracción de datos clínicos
+                </span>
+                <div className="inline-flex rounded-lg border border-stroke bg-white p-0.5">
+                  {(['openai', 'bedrock'] as const).map((e) => (
+                    <button
+                      key={e}
+                      type="button"
+                      onClick={() => setEngine(e)}
+                      className={`rounded-md px-3 py-1 text-xs font-semibold transition-colors ${
+                        engine === e ? 'bg-primary text-white' : 'text-muted hover:text-primary'
+                      }`}
+                    >
+                      {e === 'openai' ? 'OpenAI' : 'Bedrock'}
+                    </button>
+                  ))}
+                </div>
+                {engine === 'openai' ? (
+                  <label className="flex items-center gap-2 text-xs text-muted">
+                    Modelo
+                    <select
+                      value={model}
+                      onChange={(e) => setModel(e.target.value)}
+                      className="rounded-md border border-stroke bg-white px-2 py-1 text-xs text-ink focus:border-primary focus:outline-none"
+                    >
+                      {(models.length > 0 ? models : [model]).map((m) => (
+                        <option key={m} value={m}>
+                          {m}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ) : (
+                  <label className="flex items-center gap-2 text-xs text-muted">
+                    Modelo
+                    <select
+                      value={bedrockModel}
+                      onChange={(e) => setBedrockModel(e.target.value)}
+                      className="rounded-md border border-stroke bg-white px-2 py-1 text-xs text-ink focus:border-primary focus:outline-none"
+                    >
+                      {BEDROCK_MODELS.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+              </div>
+
+              {/* Fila 2 — Motor de dictado (STT): OpenAI Realtime | AWS Transcribe */}
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="w-full text-xs font-semibold text-muted sm:w-56">
+                  Motor de dictado (STT)
+                </span>
+                <div className="inline-flex rounded-lg border border-stroke bg-white p-0.5">
+                  {(['openai', 'transcribe'] as const).map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => setStt(s)}
+                      disabled={recording}
+                      className={`rounded-md px-3 py-1 text-xs font-semibold transition-colors disabled:opacity-50 ${
+                        stt === s ? 'bg-soft-blue text-white' : 'text-muted hover:text-primary'
+                      }`}
+                    >
+                      {s === 'openai' ? 'OpenAI Realtime' : 'AWS Transcribe'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Fila 3 — Vocabulario del dictado. OpenAI: campo editable; Transcribe: diccionario aparte. */}
+              {stt === 'openai' ? (
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-xs font-semibold text-muted">
+                    Vocabulario del dictado (OpenAI)
+                  </span>
+                  <textarea
+                    value={sttPrompt}
+                    onChange={(e) => setSttPrompt(e.target.value)}
+                    disabled={recording}
+                    rows={4}
+                    spellCheck={false}
+                    className="field text-xs leading-relaxed disabled:opacity-60"
+                    placeholder="Términos que el dictado debe reconocer bien (fármacos, abreviaturas, anatomía)…"
+                  />
+                  <span className="text-[11px] text-muted">
+                    Le indica al reconocedor de voz qué términos clínicos/chilenos esperar. Edítalo y
+                    vuelve a dictar para comparar.
+                  </span>
+                </div>
+              ) : (
+                <p className="text-[11px] leading-relaxed text-muted">
+                  AWS Transcribe se afina con un <strong>diccionario propio</strong> que se crea una
+                  sola vez en AWS, no desde aquí.{' '}
+                  <Link
+                    href="/diccionario"
+                    className="font-semibold text-soft-blue underline-offset-2 hover:text-primary hover:underline"
+                  >
+                    Ver diccionario recomendado →
+                  </Link>
+                </p>
+              )}
+            </div>
+
             <div className="flex flex-wrap items-center gap-3 pt-1">
               <button
                 type="button"

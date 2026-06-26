@@ -2,14 +2,29 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { OpenAIRealtimeClient } from '../openai-realtime'
+import { TranscribeStreamClient } from '../transcribe-streaming'
 import { ClinicalExtractionService } from '../clinical-extraction'
 import { validateConsistency, summarizeSections } from '../api'
 import type { RecordingState, SubmitResult } from '../types'
 
-export function useVoiceRecording(options?: { getPrompt?: () => string | undefined }) {
-  // Keep the latest prompt-getter in a ref so edits during recording are picked up.
+export function useVoiceRecording(options?: {
+  getPrompt?: () => string | undefined
+  getEngine?: () => string | undefined
+  getModel?: () => string | undefined
+  getStt?: () => 'openai' | 'transcribe'
+  getSttPrompt?: () => string | undefined
+}) {
+  // Keep the latest getters in refs so changes during recording are picked up.
   const getPromptRef = useRef(options?.getPrompt)
   getPromptRef.current = options?.getPrompt
+  const getEngineRef = useRef(options?.getEngine)
+  getEngineRef.current = options?.getEngine
+  const getModelRef = useRef(options?.getModel)
+  getModelRef.current = options?.getModel
+  const getSttRef = useRef(options?.getStt)
+  getSttRef.current = options?.getStt
+  const getSttPromptRef = useRef(options?.getSttPrompt)
+  getSttPromptRef.current = options?.getSttPrompt
 
   const [state, setState] = useState<RecordingState>({
     isRecording: false,
@@ -26,7 +41,7 @@ export function useVoiceRecording(options?: { getPrompt?: () => string | undefin
     elapsedSeconds: 0,
   })
 
-  const openaiRef = useRef<OpenAIRealtimeClient | null>(null)
+  const openaiRef = useRef<OpenAIRealtimeClient | TranscribeStreamClient | null>(null)
   const extractionRef = useRef<ClinicalExtractionService | null>(null)
   const mediaStreamRef = useRef<MediaStream | null>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -42,12 +57,16 @@ export function useVoiceRecording(options?: { getPrompt?: () => string | undefin
         (isExtracting) => {
           setState((prev) => ({ ...prev, isExtracting }))
         },
-        () => getPromptRef.current?.()
+        () => getPromptRef.current?.(),
+        () => getEngineRef.current?.(),
+        () => getModelRef.current?.()
       )
 
-      openaiRef.current = new OpenAIRealtimeClient()
+      const sttEngine = getSttRef.current?.() ?? 'openai'
+      openaiRef.current =
+        sttEngine === 'transcribe' ? new TranscribeStreamClient() : new OpenAIRealtimeClient()
 
-      console.log('🔍 [DEBUG] useVoiceRecording: Connecting to OpenAI...')
+      console.log(`🔍 [DEBUG] useVoiceRecording: Connecting via ${sttEngine}...`)
       const mediaStream = await openaiRef.current.connect(
         // onTranscript — fires when a complete turn is transcribed
         (text) => {
@@ -73,7 +92,9 @@ export function useVoiceRecording(options?: { getPrompt?: () => string | undefin
             ...prev,
             liveTranscript: prev.liveTranscript + delta,
           }))
-        }
+        },
+        // STT vocabulary bias (OpenAI only; Transcribe ignores it and uses a custom vocabulary)
+        { sttPrompt: getSttPromptRef.current?.() }
       )
       console.log('🔍 [DEBUG] useVoiceRecording: Connected, got mediaStream with', mediaStream.getTracks().length, 'tracks')
 
