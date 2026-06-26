@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { OpenAIRealtimeClient } from '../openai-realtime'
+import { TranscribeStreamClient } from '../transcribe-streaming'
 import { ClinicalExtractionService } from '../clinical-extraction'
 import { validateConsistency, summarizeSections } from '../api'
 import type { RecordingState, SubmitResult } from '../types'
@@ -10,6 +11,7 @@ export function useVoiceRecording(options?: {
   getPrompt?: () => string | undefined
   getEngine?: () => string | undefined
   getModel?: () => string | undefined
+  getStt?: () => 'openai' | 'transcribe'
 }) {
   // Keep the latest getters in refs so changes during recording are picked up.
   const getPromptRef = useRef(options?.getPrompt)
@@ -18,6 +20,8 @@ export function useVoiceRecording(options?: {
   getEngineRef.current = options?.getEngine
   const getModelRef = useRef(options?.getModel)
   getModelRef.current = options?.getModel
+  const getSttRef = useRef(options?.getStt)
+  getSttRef.current = options?.getStt
 
   const [state, setState] = useState<RecordingState>({
     isRecording: false,
@@ -34,7 +38,7 @@ export function useVoiceRecording(options?: {
     elapsedSeconds: 0,
   })
 
-  const openaiRef = useRef<OpenAIRealtimeClient | null>(null)
+  const openaiRef = useRef<OpenAIRealtimeClient | TranscribeStreamClient | null>(null)
   const extractionRef = useRef<ClinicalExtractionService | null>(null)
   const mediaStreamRef = useRef<MediaStream | null>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -55,9 +59,11 @@ export function useVoiceRecording(options?: {
         () => getModelRef.current?.()
       )
 
-      openaiRef.current = new OpenAIRealtimeClient()
+      const sttEngine = getSttRef.current?.() ?? 'openai'
+      openaiRef.current =
+        sttEngine === 'transcribe' ? new TranscribeStreamClient() : new OpenAIRealtimeClient()
 
-      console.log('🔍 [DEBUG] useVoiceRecording: Connecting to OpenAI...')
+      console.log(`🔍 [DEBUG] useVoiceRecording: Connecting via ${sttEngine}...`)
       const mediaStream = await openaiRef.current.connect(
         // onTranscript — fires when a complete turn is transcribed
         (text) => {

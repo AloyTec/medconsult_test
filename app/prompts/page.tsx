@@ -57,6 +57,7 @@ export default function PromptPlaygroundPage() {
   const [engine, setEngine] = useState<'openai' | 'bedrock'>('openai')
   const [model, setModel] = useState('gpt-4o-mini')
   const [models, setModels] = useState<string[]>([])
+  const [stt, setStt] = useState<'openai' | 'transcribe'>('openai')
 
   // Load the saved prompt from the isolated test SSM namespace on mount; the API falls
   // back to the bundled default when nothing is saved yet.
@@ -119,6 +120,7 @@ export default function PromptPlaygroundPage() {
     getPrompt: () => prompt,
     getEngine: () => engine,
     getModel: () => (engine === 'openai' ? model : undefined),
+    getStt: () => stt,
   })
   const recording = voice.state.isRecording
 
@@ -322,6 +324,24 @@ export default function PromptPlaygroundPage() {
                   us.anthropic.claude-haiku-4-5
                 </span>
               )}
+
+              <span className="mx-1 h-4 w-px bg-stroke" aria-hidden />
+              <span className="text-xs font-semibold text-muted">STT (dictado)</span>
+              <div className="inline-flex rounded-lg border border-stroke bg-white p-0.5">
+                {(['openai', 'transcribe'] as const).map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setStt(s)}
+                    disabled={recording}
+                    className={`rounded-md px-3 py-1 text-xs font-semibold transition-colors disabled:opacity-50 ${
+                      stt === s ? 'bg-soft-blue text-white' : 'text-muted hover:text-primary'
+                    }`}
+                  >
+                    {s === 'openai' ? 'OpenAI Realtime' : 'AWS Transcribe'}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-3 pt-1">
