@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { EXTRACTION_PROMPT } from '@/lib/extraction-schema'
+import { CONSISTENCY_PROMPT, SUMMARIZE_PROMPT } from '@/lib/prompts'
 import { DEFAULT_STT_PROMPT } from '@/lib/stt-vocabulary'
 import type { ExtractedData } from '@/lib/types'
 import { useVoiceRecording } from '@/lib/hooks/useVoiceRecording'
@@ -12,6 +13,46 @@ interface PromptVersion {
   lastModified: string
   value: string
 }
+
+type PromptKey = 'extraction' | 'consistency' | 'summarize'
+
+const DEFAULT_PROMPTS: Record<PromptKey, string> = {
+  extraction: EXTRACTION_PROMPT,
+  consistency: CONSISTENCY_PROMPT,
+  summarize: SUMMARIZE_PROMPT,
+}
+
+// The three prompts that run in the backend pipeline, surfaced as editor tabs.
+// `needsData` → the action runs on the extracted data (so Extraer must run first).
+const PROMPT_TABS: {
+  key: PromptKey
+  label: string
+  action: string
+  note: string
+  needsData: boolean
+}[] = [
+  {
+    key: 'extraction',
+    label: 'Extracción',
+    action: 'Extraer',
+    note: 'Estas instrucciones convierten el dictado en campos clínicos estructurados.',
+    needsData: false,
+  },
+  {
+    key: 'consistency',
+    label: 'Validación',
+    action: 'Validar',
+    note: 'Revisa la consistencia clínica de la consulta extraída (alergia vs. fármaco, diagnóstico vs. motivo, dosis, omisiones).',
+    needsData: true,
+  },
+  {
+    key: 'summarize',
+    label: 'Resumen',
+    action: 'Resumir',
+    note: 'Resume de forma concisa cada sección clínica de la consulta extraída.',
+    needsData: true,
+  },
+]
 import { DataExtraction } from '../components/DataExtraction'
 import { IconSparkles, IconTranscript, IconClipboardCheck, IconMic, Spinner } from '../components/icons'
 
@@ -60,8 +101,13 @@ const BEDROCK_MODELS = [
 ]
 
 export default function PromptPlaygroundPage() {
-  const [prompt, setPrompt] = useState(EXTRACTION_PROMPT)
-  const [baseline, setBaseline] = useState(EXTRACTION_PROMPT) // last loaded/saved value (from SSM)
+  const [promptKey, setPromptKey] = useState<PromptKey>('extraction')
+  const [prompts, setPrompts] = useState<Record<PromptKey, string>>(DEFAULT_PROMPTS)
+  const [baselines, setBaselines] = useState<Record<PromptKey, string>>(DEFAULT_PROMPTS)
+  const prompt = prompts[promptKey] // active editor value
+  const setPrompt = (value: string) => setPrompts((p) => ({ ...p, [promptKey]: value }))
+  const currentDefault = DEFAULT_PROMPTS[promptKey]
+  const activeTab = PROMPT_TABS.find((t) => t.key === promptKey)!
   const [transcript, setTranscript] = useState('')
   const [result, setResult] = useState<ExtractedData | null>(null)
   const [isExtracting, setIsExtracting] = useState(false)
@@ -69,6 +115,15 @@ export default function PromptPlaygroundPage() {
   const [latencyMs, setLatencyMs] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
   const [saveMsg, setSaveMsg] = useState<string | null>(null)
+  // Resultados de validación y resumen (corren sobre los datos extraídos).
+  const [validation, setValidation] = useState<{ consistent: boolean; observations: string } | null>(
+    null
+  )
+  const [summary, setSummary] = useState<Record<string, string> | null>(null)
+  const [isValidating, setIsValidating] = useState(false)
+  const [isSummarizing, setIsSummarizing] = useState(false)
+  const [valMs, setValMs] = useState<number | null>(null)
+  const [sumMs, setSumMs] = useState<number | null>(null)
   const [engine, setEngine] = useState<'openai' | 'bedrock'>('openai')
   const [model, setModel] = useState('gpt-4o-mini')
   const [models, setModels] = useState<string[]>([])
@@ -87,10 +142,14 @@ export default function PromptPlaygroundPage() {
     fetch('/api/prompts')
       .then((r) => r.json())
       .then((d) => {
-        const v = d?.prompts?.extraction?.value
-        if (typeof v === 'string' && v.length > 0) {
-          setPrompt(v)
-          setBaseline(v)
+        const next: Partial<Record<PromptKey, string>> = {}
+        for (const k of ['extraction', 'consistency', 'summarize'] as PromptKey[]) {
+          const v = d?.prompts?.[k]?.value
+          if (typeof v === 'string' && v.length > 0) next[k] = v
+        }
+        if (Object.keys(next).length > 0) {
+          setPrompts((p) => ({ ...p, ...next }))
+          setBaselines((b) => ({ ...b, ...next }))
         }
       })
       .catch(() => {})
@@ -110,25 +169,37 @@ export default function PromptPlaygroundPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const promptEdited = prompt !== baseline
-  const promptIsDefault = prompt === EXTRACTION_PROMPT
+  const promptEdited = prompts[promptKey] !== baselines[promptKey]
+  const promptIsDefault = prompts[promptKey] === currentDefault
 
   async function savePrompt() {
+    // Guard: don't persist a degenerate prompt, and keep the data marker for the
+    // validation/summary prompts (without it the consultation data isn't injected).
+    const value = prompts[promptKey]
+    if (value.trim().length < 20) {
+      setSaveMsg('El prompt es demasiado corto para guardarse. Escribe instrucciones reales.')
+      return
+    }
+    if (activeTab.needsData && !value.includes('$CONSULTATION_DATA')) {
+      setSaveMsg('Falta el marcador $CONSULTATION_DATA (ahí se inyectan los datos de la consulta).')
+      return
+    }
+
     setSaving(true)
     setSaveMsg(null)
     try {
       const res = await fetch('/api/prompts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: 'extraction', value: prompt }),
+        body: JSON.stringify({ key: promptKey, value }),
       })
       const data = await res.json()
       if (!res.ok) {
         setSaveMsg(data?.error ?? `Error al guardar (${res.status})`)
         return
       }
-      setBaseline(prompt)
-      setSaveMsg('Guardado en SSM ✓')
+      setBaselines((b) => ({ ...b, [promptKey]: value }))
+      setSaveMsg('Guardado en SSM ✓ (nueva versión)')
       if (historyOpen) loadHistory() // refresh so the new version shows up
     } catch {
       setSaveMsg('No se pudo guardar (problema de red).')
@@ -141,7 +212,7 @@ export default function PromptPlaygroundPage() {
     setHistoryLoading(true)
     setHistoryError(null)
     try {
-      const res = await fetch('/api/prompts/history?key=extraction')
+      const res = await fetch(`/api/prompts/history?key=${promptKey}`)
       const data = await res.json()
       if (!res.ok) {
         setHistoryError(data?.error ?? `No se pudo cargar el historial (${res.status}).`)
@@ -169,12 +240,21 @@ export default function PromptPlaygroundPage() {
     setSaveMsg(`Cargada la versión ${v.version} en el editor (aún sin guardar).`)
   }
 
+  function selectTab(key: PromptKey) {
+    setPromptKey(key)
+    setHistoryOpen(false) // el historial es por prompt; ciérralo al cambiar de pestaña
+    setSaveMsg(null)
+  }
+
+  // Modelo activo para los tres carriles (OpenAI: lista seleccionable; Bedrock: Haiku/Sonnet/Opus).
+  const activeModel = engine === 'openai' ? model : bedrockModel
+
   // Live dictation (faithful to Flutter): mic → realtime transcript → 2s-debounced
-  // extraction with the *current* (edited) prompt → fields fill in as you speak.
+  // extraction with the extraction prompt → fields fill in as you speak.
   const voice = useVoiceRecording({
-    getPrompt: () => prompt,
+    getPrompt: () => prompts.extraction,
     getEngine: () => engine,
-    getModel: () => (engine === 'openai' ? model : bedrockModel),
+    getModel: () => activeModel,
     getStt: () => stt,
     getSttPrompt: () => sttPrompt,
   })
@@ -204,9 +284,9 @@ export default function PromptPlaygroundPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           transcript,
-          prompt,
+          prompt: prompts.extraction,
           engine,
-          model: engine === 'openai' ? model : bedrockModel,
+          model: activeModel,
         }),
       })
       const data = await res.json()
@@ -216,12 +296,86 @@ export default function PromptPlaygroundPage() {
       }
       setResult(data as ExtractedData)
       setLatencyMs(Math.round(performance.now() - startedAt))
+      // Los resultados de validación/resumen quedan obsoletos al re-extraer.
+      setValidation(null)
+      setSummary(null)
     } catch {
       setError('No se pudo conectar con el servidor. Intenta de nuevo.')
     } finally {
       setIsExtracting(false)
     }
   }
+
+  async function runValidate() {
+    if (!result) {
+      setError('Primero extrae los datos de la consulta (pestaña Extracción).')
+      return
+    }
+    setError(null)
+    setIsValidating(true)
+    const startedAt = performance.now()
+    try {
+      const res = await fetch('/api/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: result, prompt: prompts.consistency, engine, model: activeModel }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data?.error ?? `La validación falló (${res.status}).`)
+        return
+      }
+      setValidation({ consistent: data.consistent === true, observations: data.observations ?? '' })
+      setValMs(Math.round(performance.now() - startedAt))
+    } catch {
+      setError('No se pudo conectar con el servidor. Intenta de nuevo.')
+    } finally {
+      setIsValidating(false)
+    }
+  }
+
+  async function runSummarize() {
+    if (!result) {
+      setError('Primero extrae los datos de la consulta (pestaña Extracción).')
+      return
+    }
+    setError(null)
+    setIsSummarizing(true)
+    const startedAt = performance.now()
+    try {
+      const res = await fetch('/api/summarize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: result, prompt: prompts.summarize, engine, model: activeModel }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data?.error ?? `El resumen falló (${res.status}).`)
+        return
+      }
+      setSummary(data as Record<string, string>)
+      setSumMs(Math.round(performance.now() - startedAt))
+    } catch {
+      setError('No se pudo conectar con el servidor. Intenta de nuevo.')
+    } finally {
+      setIsSummarizing(false)
+    }
+  }
+
+  // Acción contextual de la pestaña activa.
+  function runActive() {
+    if (promptKey === 'extraction') return runExtraction()
+    if (promptKey === 'consistency') return runValidate()
+    return runSummarize()
+  }
+  const isRunningActive =
+    promptKey === 'extraction'
+      ? isExtracting
+      : promptKey === 'consistency'
+        ? isValidating
+        : isSummarizing
+  const activeMs =
+    promptKey === 'extraction' ? latencyMs : promptKey === 'consistency' ? valMs : sumMs
 
   return (
     <div className="space-y-8">
@@ -287,10 +441,25 @@ export default function PromptPlaygroundPage() {
         <div className="space-y-6">
           {/* Prompt */}
           <section className="card space-y-3">
+            {/* Tabs: los 3 prompts del pipeline backend (Extracción → Validación → Resumen). */}
+            <div className="inline-flex rounded-lg border border-stroke bg-surface/40 p-0.5">
+              {PROMPT_TABS.map((t) => (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => selectTab(t.key)}
+                  className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+                    promptKey === t.key ? 'bg-primary text-white' : 'text-muted hover:text-primary'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <IconSparkles className="h-5 w-5 text-soft-blue" />
-                <h2 className="text-base font-semibold text-ink">Prompt de extracción</h2>
+                <h2 className="text-base font-semibold text-ink">Prompt de {activeTab.label.toLowerCase()}</h2>
                 {promptEdited && (
                   <span className="rounded-full bg-surface px-2 py-0.5 text-[11px] font-semibold text-soft-blue">
                     sin guardar
@@ -307,7 +476,7 @@ export default function PromptPlaygroundPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setPrompt(EXTRACTION_PROMPT)}
+                  onClick={() => setPrompt(currentDefault)}
                   disabled={promptIsDefault}
                   className="text-sm font-medium text-soft-blue underline-offset-2 hover:text-primary hover:underline disabled:text-disabled disabled:no-underline"
                 >
@@ -330,8 +499,7 @@ export default function PromptPlaygroundPage() {
               </div>
             </div>
             <p className="text-xs text-muted">
-              Estas instrucciones definen cómo la IA convierte el dictado en campos estructurados.
-              Cada <strong className="font-medium">Guardar</strong> crea una{' '}
+              {activeTab.note} Cada <strong className="font-medium">Guardar</strong> crea una{' '}
               <strong className="font-medium">nueva versión</strong> (puedes volver a una anterior
               con <strong className="font-medium">Ver versiones</strong>). Es un entorno de prueba:
               no afecta la app de los doctores.
@@ -558,17 +726,22 @@ export default function PromptPlaygroundPage() {
             <div className="flex flex-wrap items-center gap-3 pt-1">
               <button
                 type="button"
-                onClick={runExtraction}
-                disabled={isExtracting || recording}
+                onClick={runActive}
+                disabled={isRunningActive || recording || (activeTab.needsData && !result)}
+                title={
+                  activeTab.needsData && !result
+                    ? 'Primero extrae los datos en la pestaña Extracción'
+                    : undefined
+                }
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-[10px] bg-primary px-5 text-sm font-semibold text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:bg-disabled"
               >
-                {isExtracting ? (
+                {isRunningActive ? (
                   <>
-                    <Spinner className="h-4 w-4" /> Extrayendo…
+                    <Spinner className="h-4 w-4" /> {activeTab.action}…
                   </>
                 ) : (
                   <>
-                    <IconSparkles className="h-4 w-4" /> Extraer
+                    <IconSparkles className="h-4 w-4" /> {activeTab.action}
                   </>
                 )}
               </button>
@@ -598,9 +771,9 @@ export default function PromptPlaygroundPage() {
                 )}
               </button>
 
-              {latencyMs != null && !isExtracting && !recording && (
+              {activeMs != null && !isRunningActive && !recording && (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-success-surface px-3 py-1 text-xs font-medium text-success">
-                  <IconClipboardCheck className="h-3.5 w-3.5" /> Listo · {latencyMs} ms
+                  <IconClipboardCheck className="h-3.5 w-3.5" /> Listo · {activeMs} ms
                 </span>
               )}
               {recording && (
@@ -620,9 +793,53 @@ export default function PromptPlaygroundPage() {
           </section>
         </div>
 
-        {/* Columna derecha: resultados (reusa el componente existente) */}
-        <div className="lg:sticky lg:top-24 lg:self-start">
+        {/* Columna derecha: resultados del pipeline (extracción → validación → resumen) */}
+        <div className="space-y-4 lg:self-start">
           <DataExtraction extractedData={result} isExtracting={isExtracting || voice.state.isExtracting} />
+
+          {validation && (
+            <section className="card space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="text-base font-semibold text-ink">Validación de consistencia</h2>
+                <span
+                  className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
+                    validation.consistent
+                      ? 'bg-success-surface text-success'
+                      : 'bg-danger-surface text-danger'
+                  }`}
+                >
+                  {validation.consistent ? 'Consistente' : 'Inconsistente'}
+                </span>
+              </div>
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink">
+                {validation.observations || 'Sin observaciones.'}
+              </p>
+            </section>
+          )}
+
+          {summary && (
+            <section className="card space-y-3">
+              <h2 className="text-base font-semibold text-ink">Resumen clínico</h2>
+              {(
+                [
+                  ['antecedentes', 'Antecedentes'],
+                  ['motivoConsulta', 'Motivo de consulta'],
+                  ['examenFisico', 'Examen físico'],
+                  ['diagnostico', 'Diagnóstico'],
+                  ['planTrabajo', 'Plan de trabajo'],
+                ] as const
+              ).map(([k, label]) =>
+                summary[k] ? (
+                  <div key={k}>
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-muted">
+                      {label}
+                    </p>
+                    <p className="text-sm leading-relaxed text-ink">{summary[k]}</p>
+                  </div>
+                ) : null
+              )}
+            </section>
+          )}
         </div>
       </div>
     </div>

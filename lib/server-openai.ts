@@ -26,7 +26,8 @@ export function buildSections(data: ExtractedData): ConsultationSections {
 export async function callOpenAIJson(
   systemMessage: string,
   userPrompt: string,
-  maxTokens: number
+  maxTokens: number,
+  model = 'gpt-4o-mini'
 ): Promise<Record<string, unknown>> {
   if (!OPENAI_API_KEY) {
     throw new Error('OPENAI_API_KEY no está configurada en el servidor')
@@ -39,7 +40,7 @@ export async function callOpenAIJson(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
+      model,
       messages: [
         { role: 'system', content: systemMessage },
         { role: 'user', content: userPrompt },
