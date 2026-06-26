@@ -38,10 +38,12 @@ export async function POST(req: NextRequest) {
     const userPrompt = withData(instructions, consultationData)
     const useModel = typeof model === 'string' && model.trim().length > 0 ? model : undefined
 
+    // 2048 tokens: the summary has 5 sections; give verbose models room so the JSON
+    // isn't cut off (truncation = the transient "respuesta no es JSON válido" error).
     const result =
       engine === 'bedrock'
-        ? await invokeClaudeJson(SYSTEM, userPrompt, 800, useModel)
-        : await callOpenAIJson(SYSTEM, userPrompt, 800, useModel)
+        ? await invokeClaudeJson(SYSTEM, userPrompt, 2048, useModel)
+        : await callOpenAIJson(SYSTEM, userPrompt, 2048, useModel)
 
     return NextResponse.json({
       antecedentes: (result.antecedentes as string) || sections.antecedentes || '',
