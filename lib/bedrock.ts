@@ -29,6 +29,7 @@ interface BedrockTextBlock {
 }
 interface BedrockBody {
   content?: BedrockTextBlock[]
+  stop_reason?: string
 }
 
 /**
@@ -71,7 +72,20 @@ export async function invokeClaudeJson(
   } catch {
     // Fall back to the last top-level { ... } block.
     const block = text.match(/\{[\s\S]*\}/)
-    if (block) return JSON.parse(block[0])
+    if (block) {
+      try {
+        return JSON.parse(block[0])
+      } catch {
+        // fall through to the diagnostic errors below
+      }
+    }
+    // Most common cause of unparseable JSON: the model hit max_tokens and the JSON
+    // was cut off mid-object (transient — verbose models on long inputs). Surface it.
+    if (body.stop_reason === 'max_tokens') {
+      throw new Error(
+        'La respuesta de Bedrock se cortó por el límite de tokens (max_tokens). Reintenta o sube el límite.'
+      )
+    }
     throw new Error('La respuesta de Bedrock no es JSON válido')
   }
 }

@@ -42,10 +42,12 @@ export async function POST(req: NextRequest) {
     const userPrompt = withData(instructions, consultationData)
     const useModel = typeof model === 'string' && model.trim().length > 0 ? model : undefined
 
+    // 1024 tokens: room for verbose models (e.g. Sonnet) so the JSON isn't truncated
+    // mid-object — truncation was the transient "respuesta no es JSON válido" cause.
     const result =
       engine === 'bedrock'
-        ? await invokeClaudeJson(SYSTEM, userPrompt, 300, useModel)
-        : await callOpenAIJson(SYSTEM, userPrompt, 300, useModel)
+        ? await invokeClaudeJson(SYSTEM, userPrompt, 1024, useModel)
+        : await callOpenAIJson(SYSTEM, userPrompt, 1024, useModel)
 
     return NextResponse.json({
       consistent: result.consistent === true,
