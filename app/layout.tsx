@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import './globals.css'
-import { LogoMark, IconSparkles, IconMic } from './components/icons'
+import { LogoMark, IconSparkles } from './components/icons'
 import { NavLink } from './components/NavLink'
 
 export const metadata: Metadata = {
@@ -24,7 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-dvh">
         <header className="sticky top-0 z-20 border-b border-stroke bg-white/85 backdrop-blur">
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
-            <Link href="/" className="flex items-center gap-2.5">
+            <Link href="/prompts" className="flex items-center gap-2.5">
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-surface text-primary">
                 <LogoMark className="h-5 w-5" />
               </span>
@@ -36,9 +36,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <nav className="flex items-center gap-1">
               <NavLink href="/prompts">
                 <IconSparkles className="h-4 w-4" /> Editor de prompts
-              </NavLink>
-              <NavLink href="/">
-                <IconMic className="h-4 w-4" /> Grabación
               </NavLink>
             </nav>
           </div>

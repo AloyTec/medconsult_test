@@ -7,8 +7,9 @@ OIDC token; AWS trusts it and returns ~1h temp creds for a **tightly-scoped role
 **Why an admin runs this:** creating an IAM OIDC provider + role is IAM-write — a dev SSO role
 can't do it. Run the steps below with an **IAM-admin** identity (or port to Pulumi).
 
-**Scope (blast radius):** the role can ONLY `bedrock:InvokeModel` (Haiku) + `ssm:Get/PutParameter`
-on `/medconsult/poc/prompts/*`. **No PHI, no other resources.** Code already wired (see Step 4).
+**Scope (blast radius):** the role can ONLY `bedrock:InvokeModel` (Claude Haiku 4.5 / Sonnet 4.6 /
+Opus 4.6) + `ssm:Get/PutParameter` on `/medconsult/poc/prompts/*`. **No PHI, no other resources.**
+Code already wired (see Step 4).
 
 Verified against: <https://vercel.com/docs/oidc/aws>. Account `889268462469`, region `us-east-1`.
 
@@ -44,18 +45,22 @@ IAM → **Identity providers** → **Add provider** → **OpenID Connect**:
   }]
 }
 ```
-`permissions-policy.json` (least privilege — Bedrock Haiku + the POC SSM namespace only):
+`permissions-policy.json` (least privilege — Bedrock Claude (Haiku/Sonnet/Opus) + the POC SSM namespace only):
 ```json
 {
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Sid": "BedrockInvokeHaiku",
+      "Sid": "BedrockInvokeClaude",
       "Effect": "Allow",
       "Action": "bedrock:InvokeModel",
       "Resource": [
         "arn:aws:bedrock:us-east-1:889268462469:inference-profile/us.anthropic.claude-haiku-4-5-20251001-v1:0",
-        "arn:aws:bedrock:*::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0"
+        "arn:aws:bedrock:us-east-1:889268462469:inference-profile/us.anthropic.claude-sonnet-4-6",
+        "arn:aws:bedrock:us-east-1:889268462469:inference-profile/us.anthropic.claude-opus-4-6-v1",
+        "arn:aws:bedrock:*::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0",
+        "arn:aws:bedrock:*::foundation-model/anthropic.claude-sonnet-4-6",
+        "arn:aws:bedrock:*::foundation-model/anthropic.claude-opus-4-6-v1"
       ]
     },
     {
@@ -83,6 +88,9 @@ aws iam put-role-policy --role-name medconsult-poc-vercel \
   --policy-document file://permissions-policy.json
 aws iam get-role --role-name medconsult-poc-vercel --query Role.Arn --output text   # copy this ARN
 ```
+> **Updating an existing role** (e.g. to add Sonnet 4.6 / Opus 4.6): the role already exists, so
+> re-run **only** `put-role-policy` with the same `--policy-name` — it overwrites the inline policy
+> in place (no `create-role` needed, no redeploy). Takes effect on the next request.
 
 ## 3. Vercel project env vars
 In the `medconsult_test` project → Settings → Environment Variables (Production + Preview):

@@ -38,7 +38,8 @@ interface BedrockBody {
 export async function invokeClaudeJson(
   system: string,
   userText: string,
-  maxTokens = 1024
+  maxTokens = 1024,
+  modelId?: string
 ): Promise<Record<string, unknown>> {
   const payload = {
     anthropic_version: 'bedrock-2023-05-31',
@@ -49,7 +50,7 @@ export async function invokeClaudeJson(
   }
 
   const command = new InvokeModelCommand({
-    modelId: MODEL_ID,
+    modelId: modelId || MODEL_ID,
     contentType: 'application/json',
     accept: 'application/json',
     body: JSON.stringify(payload),

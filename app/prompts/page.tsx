@@ -44,6 +44,13 @@ const SAMPLE_TRANSCRIPTS: { label: string; text: string }[] = [
   },
 ]
 
+// Modelos de Bedrock seleccionables (inference profiles us.* cross-region).
+const BEDROCK_MODELS = [
+  { id: 'us.anthropic.claude-haiku-4-5-20251001-v1:0', label: 'Haiku 4.5 · rápido y económico' },
+  { id: 'us.anthropic.claude-sonnet-4-6', label: 'Sonnet 4.6 · balanceado' },
+  { id: 'us.anthropic.claude-opus-4-6-v1', label: 'Opus 4.6 · máxima calidad' },
+]
+
 export default function PromptPlaygroundPage() {
   const [prompt, setPrompt] = useState(EXTRACTION_PROMPT)
   const [baseline, setBaseline] = useState(EXTRACTION_PROMPT) // last loaded/saved value (from SSM)
@@ -57,6 +64,7 @@ export default function PromptPlaygroundPage() {
   const [engine, setEngine] = useState<'openai' | 'bedrock'>('openai')
   const [model, setModel] = useState('gpt-4o-mini')
   const [models, setModels] = useState<string[]>([])
+  const [bedrockModel, setBedrockModel] = useState(BEDROCK_MODELS[0].id)
   const [stt, setStt] = useState<'openai' | 'transcribe'>('openai')
 
   // Load the saved prompt from the isolated test SSM namespace on mount; the API falls
@@ -119,7 +127,7 @@ export default function PromptPlaygroundPage() {
   const voice = useVoiceRecording({
     getPrompt: () => prompt,
     getEngine: () => engine,
-    getModel: () => (engine === 'openai' ? model : undefined),
+    getModel: () => (engine === 'openai' ? model : bedrockModel),
     getStt: () => stt,
   })
   const recording = voice.state.isRecording
@@ -150,7 +158,7 @@ export default function PromptPlaygroundPage() {
           transcript,
           prompt,
           engine,
-          model: engine === 'openai' ? model : undefined,
+          model: engine === 'openai' ? model : bedrockModel,
         }),
       })
       const data = await res.json()
@@ -287,9 +295,11 @@ export default function PromptPlaygroundPage() {
               className="field"
             />
 
-            {/* Motor de extracción: OpenAI (modelo seleccionable) | Bedrock Haiku */}
+            {/* IA de extracción: OpenAI (modelo seleccionable) | Bedrock (Haiku/Sonnet/Opus) */}
             <div className="flex flex-wrap items-center gap-3 rounded-lg border border-stroke bg-surface/40 p-3">
-              <span className="text-xs font-semibold text-muted">Motor</span>
+              <span className="text-xs font-semibold text-muted">
+                IA para extracción de datos clínicos
+              </span>
               <div className="inline-flex rounded-lg border border-stroke bg-white p-0.5">
                 {(['openai', 'bedrock'] as const).map((e) => (
                   <button
@@ -300,7 +310,7 @@ export default function PromptPlaygroundPage() {
                       engine === e ? 'bg-primary text-white' : 'text-muted hover:text-primary'
                     }`}
                   >
-                    {e === 'openai' ? 'OpenAI' : 'Bedrock (Haiku)'}
+                    {e === 'openai' ? 'OpenAI' : 'Bedrock'}
                   </button>
                 ))}
               </div>
@@ -320,13 +330,24 @@ export default function PromptPlaygroundPage() {
                   </select>
                 </label>
               ) : (
-                <span className="font-mono text-[11px] text-muted">
-                  us.anthropic.claude-haiku-4-5
-                </span>
+                <label className="flex items-center gap-2 text-xs text-muted">
+                  Modelo
+                  <select
+                    value={bedrockModel}
+                    onChange={(e) => setBedrockModel(e.target.value)}
+                    className="rounded-md border border-stroke bg-white px-2 py-1 text-xs text-ink focus:border-primary focus:outline-none"
+                  >
+                    {BEDROCK_MODELS.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               )}
 
               <span className="mx-1 h-4 w-px bg-stroke" aria-hidden />
-              <span className="text-xs font-semibold text-muted">STT (dictado)</span>
+              <span className="text-xs font-semibold text-muted">Motor de dictado (STT)</span>
               <div className="inline-flex rounded-lg border border-stroke bg-white p-0.5">
                 {(['openai', 'transcribe'] as const).map((s) => (
                   <button

@@ -30,10 +30,17 @@ export async function POST(req: NextRequest) {
       ? prompt
       : EXTRACTION_PROMPT
 
-  // ── AWS Bedrock lane (Claude Haiku 4.5, IAM-scoped — no API key) ──
+  // ── AWS Bedrock lane (Claude Haiku/Sonnet/Opus, IAM-scoped — no API key) ──
   if (engine === 'bedrock') {
     try {
-      const result = await invokeClaudeJson(`${instructions}\n\n${JSON_SHAPE}`, transcript, 1024)
+      const bedrockModel =
+        typeof model === 'string' && model.trim().length > 0 ? model : undefined
+      const result = await invokeClaudeJson(
+        `${instructions}\n\n${JSON_SHAPE}`,
+        transcript,
+        1024,
+        bedrockModel
+      )
       return NextResponse.json(result)
     } catch (error) {
       console.error('Bedrock extraction error:', error)
