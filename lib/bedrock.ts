@@ -5,8 +5,9 @@ import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedroc
 import { awsCredentialsProvider } from '@vercel/oidc-aws-credentials-provider'
 
 const REGION = process.env.AWS_REGION || 'us-east-1'
-// Cross-region inference profile for high availability (matches DexaVision BEDROCK_MODELS).
-const MODEL_ID = process.env.BEDROCK_MODEL_ID || 'us.anthropic.claude-haiku-4-5-20251001-v1:0'
+// Global cross-region inference profile — ~10% cheaper per token than the us.* geographic
+// profile (billed from the source region; requests may route to any AWS commercial region).
+const MODEL_ID = process.env.BEDROCK_MODEL_ID || 'global.anthropic.claude-haiku-4-5-20251001-v1:0'
 
 let cachedClient: BedrockRuntimeClient | null = null
 function getClient(): BedrockRuntimeClient {

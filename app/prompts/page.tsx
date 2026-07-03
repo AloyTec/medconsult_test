@@ -93,11 +93,11 @@ const SAMPLE_TRANSCRIPTS: { label: string; text: string }[] = [
   },
 ]
 
-// Modelos de Bedrock seleccionables (inference profiles us.* cross-region).
+// Modelos de Bedrock seleccionables (inference profiles global.* — ~10% más baratos que us.*).
 const BEDROCK_MODELS = [
-  { id: 'us.anthropic.claude-haiku-4-5-20251001-v1:0', label: 'Haiku 4.5 · rápido y económico' },
-  { id: 'us.anthropic.claude-sonnet-4-6', label: 'Sonnet 4.6 · balanceado' },
-  { id: 'us.anthropic.claude-opus-4-6-v1', label: 'Opus 4.6 · máxima calidad' },
+  { id: 'global.anthropic.claude-haiku-4-5-20251001-v1:0', label: 'Haiku 4.5 · rápido y económico' },
+  { id: 'global.anthropic.claude-sonnet-4-6', label: 'Sonnet 4.6 · balanceado' },
+  { id: 'global.anthropic.claude-opus-4-6-v1', label: 'Opus 4.6 · máxima calidad' },
 ]
 
 export default function PromptPlaygroundPage() {

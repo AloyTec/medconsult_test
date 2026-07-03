@@ -45,7 +45,12 @@ IAM → **Identity providers** → **Add provider** → **OpenID Connect**:
   }]
 }
 ```
-`permissions-policy.json` (least privilege — Bedrock Claude (Haiku/Sonnet/Opus) + the POC SSM namespace only):
+`permissions-policy.json` (least privilege — Bedrock Claude (Haiku/Sonnet/Opus) + the POC SSM namespace only).
+> Uses the **global** cross-region inference profiles (`global.*`) — ~10% cheaper per token than
+> the `us.*` geographic profiles, billed from the source region. Global CRIS needs `InvokeModel`
+> on three ARN shapes: the `global.*` inference profile, the regional foundation-model ARN, and
+> the **region-less** global foundation-model ARN (`arn:aws:bedrock:::foundation-model/...`).
+> Ref: <https://docs.aws.amazon.com/bedrock/latest/userguide/global-cross-region-inference.html>
 ```json
 {
   "Version": "2012-10-17",
@@ -55,12 +60,15 @@ IAM → **Identity providers** → **Add provider** → **OpenID Connect**:
       "Effect": "Allow",
       "Action": "bedrock:InvokeModel",
       "Resource": [
-        "arn:aws:bedrock:us-east-1:889268462469:inference-profile/us.anthropic.claude-haiku-4-5-20251001-v1:0",
-        "arn:aws:bedrock:us-east-1:889268462469:inference-profile/us.anthropic.claude-sonnet-4-6",
-        "arn:aws:bedrock:us-east-1:889268462469:inference-profile/us.anthropic.claude-opus-4-6-v1",
+        "arn:aws:bedrock:us-east-1:889268462469:inference-profile/global.anthropic.claude-haiku-4-5-20251001-v1:0",
+        "arn:aws:bedrock:us-east-1:889268462469:inference-profile/global.anthropic.claude-sonnet-4-6",
+        "arn:aws:bedrock:us-east-1:889268462469:inference-profile/global.anthropic.claude-opus-4-6-v1",
         "arn:aws:bedrock:*::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0",
         "arn:aws:bedrock:*::foundation-model/anthropic.claude-sonnet-4-6",
-        "arn:aws:bedrock:*::foundation-model/anthropic.claude-opus-4-6-v1"
+        "arn:aws:bedrock:*::foundation-model/anthropic.claude-opus-4-6-v1",
+        "arn:aws:bedrock:::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0",
+        "arn:aws:bedrock:::foundation-model/anthropic.claude-sonnet-4-6",
+        "arn:aws:bedrock:::foundation-model/anthropic.claude-opus-4-6-v1"
       ]
     },
     {
