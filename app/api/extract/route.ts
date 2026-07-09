@@ -35,10 +35,12 @@ export async function POST(req: NextRequest) {
     try {
       const bedrockModel =
         typeof model === 'string' && model.trim().length > 0 ? model : undefined
+      // 4096: the extraction JSON mirrors the dictation across 5 free-text sections,
+      // so output grows with input — 1024 truncated long dictations (500s on 2026-07-08).
       const result = await invokeClaudeJson(
         `${instructions}\n\n${JSON_SHAPE}`,
         transcript,
-        1024,
+        4096,
         bedrockModel
       )
       return NextResponse.json(result)

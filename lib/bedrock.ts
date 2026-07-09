@@ -80,6 +80,14 @@ export async function invokeClaudeJson(
         // fall through to the diagnostic errors below
       }
     }
+    // PII-safe diagnostics (shape only, never content): enough to tell truncation
+    // from prose/refusal in the Vercel logs next time this fires.
+    console.error('Bedrock JSON parse failed:', {
+      stopReason: body.stop_reason ?? null,
+      textLength: text.length,
+      hadFence: Boolean(fenced),
+      hadBlock: Boolean(block),
+    })
     // Most common cause of unparseable JSON: the model hit max_tokens and the JSON
     // was cut off mid-object (transient — verbose models on long inputs). Surface it.
     if (body.stop_reason === 'max_tokens') {
