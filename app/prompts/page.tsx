@@ -625,6 +625,7 @@ export default function PromptPlaygroundPage() {
                   key={s.label}
                   type="button"
                   onClick={() => {
+                    voice.clear() // resetea el dictado acumulado: que no se mezcle en la nueva atención
                     setTranscript(s.text)
                     setAtencionId(ulid())
                     setTranscriptOrigin('texto')

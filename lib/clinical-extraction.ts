@@ -10,6 +10,7 @@ export class ClinicalExtractionService {
   private buffer: string = ''
   private debounceTimer: ReturnType<typeof setTimeout> | null = null
   private jobId: number = 0
+  private inflight: Promise<void> | null = null
   private onExtracted: ((data: ExtractedData) => void) | null = null
   private onExtracting: ((isExtracting: boolean) => void) | null = null
   private getPrompt: (() => string | undefined) | null = null
@@ -48,15 +49,16 @@ export class ClinicalExtractionService {
   }
 
   /**
-   * Dispara YA la extracción pendiente del debounce (se llama al detener la
-   * grabación) — sin esto, lo dictado en los últimos 2s nunca se extrae ni persiste.
+   * Al detener la grabación: si hay una extracción pendiente del debounce la
+   * dispara YA; si ya hay una en vuelo la espera (sin duplicar la llamada).
    */
   flush(): Promise<void> {
     if (this.debounceTimer) {
       clearTimeout(this.debounceTimer)
       this.debounceTimer = null
+      return this.extract()
     }
-    return this.extract()
+    return this.inflight ?? Promise.resolve()
   }
 
   /**
@@ -72,14 +74,25 @@ export class ClinicalExtractionService {
 
     // Schedule extraction after 2 seconds of silence
     this.debounceTimer = setTimeout(() => {
+      this.debounceTimer = null
       this.extract()
     }, 2000)
+  }
+
+  /** Corre la extracción registrando el vuelo, para que flush() pueda esperarla. */
+  extract(): Promise<void> {
+    const run = this.performExtract()
+    this.inflight = run
+    run.finally(() => {
+      if (this.inflight === run) this.inflight = null
+    })
+    return run
   }
 
   /**
    * Call the extraction API with the accumulated buffer.
    */
-  async extract(): Promise<void> {
+  private async performExtract(): Promise<void> {
     if (!this.buffer.trim()) return
 
     const currentJobId = ++this.jobId
