@@ -145,6 +145,31 @@ describe('recordRun', () => {
     expect(put.Item.transcript).toContain('[transcript truncado]')
     expect(put.Item.runs[0].transcriptChars).toBe(150_000) // largo REAL procesado
   })
+
+  it('degrades old prompts instead of failing when the item nears 400KB', async () => {
+    jest.spyOn(console, 'error').mockImplementation(() => {})
+    const bigPrompt = 'p'.repeat(30_000)
+    const existingRuns = Array.from({ length: 12 }, (_, i) => ({
+      ...RUN_INPUT,
+      prompt: bigPrompt,
+      at: `t${i}`,
+    }))
+    mockSend.mockResolvedValueOnce({
+      Item: {
+        pk: 'ATENCION', sk: ID, createdAt: 'c', updatedAt: 'x', pseudonym: 'P',
+        transcript: 't', runs: existingRuns, runsCount: 12, lastDiagnostico: null,
+      },
+    })
+    mockSend.mockResolvedValueOnce({})
+    await recordRun(ID, 'P', { ...RUN_INPUT, prompt: bigPrompt })
+    const put = mockSend.mock.calls[1][0]
+    expect(JSON.stringify(put.Item).length).toBeLessThanOrEqual(350_000)
+    // la corrida MÁS RECIENTE conserva su prompt completo
+    expect(put.Item.runs[put.Item.runs.length - 1].prompt).toBe(bigPrompt)
+    // las viejas quedan truncadas con marcador
+    expect(put.Item.runs[0].prompt).toContain('[prompt truncado')
+    jest.restoreAllMocks()
+  })
 })
 
 describe('attachValidation / attachSummary', () => {

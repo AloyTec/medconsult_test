@@ -99,6 +99,33 @@ function truncateTranscript(text: string): string {
     : text
 }
 
+// Margen bajo el límite duro de 400KB por item de DynamoDB (JSON length ≈ bytes
+// para texto mayormente ASCII; aproximación aceptada en el spec).
+const MAX_ITEM_CHARS = 350_000
+const PROMPT_TRUNCADO = '…[prompt truncado por tamaño]'
+
+/**
+ * Degradación del spec: si el item roza los 400KB, recorta el prompt de las
+ * corridas más viejas (la más reciente se conserva completa) y lo loguea,
+ * antes que dejar el write fallando para siempre.
+ */
+function shrinkItem(item: Atencion): Atencion {
+  if (JSON.stringify(item).length <= MAX_ITEM_CHARS) return item
+  const runs = item.runs.map((r) => ({ ...r }))
+  for (let i = 0; i < runs.length - 1; i++) {
+    if (runs[i].prompt.length > 200) {
+      runs[i].prompt = runs[i].prompt.slice(0, 200) + PROMPT_TRUNCADO
+    }
+    if (JSON.stringify({ ...item, runs }).length <= MAX_ITEM_CHARS) break
+  }
+  const shrunk = { ...item, runs }
+  console.error('recordRun: item cerca del límite de 400KB, prompts antiguos truncados', {
+    sk: item.sk,
+    runs: runs.length,
+  })
+  return shrunk
+}
+
 export async function getAtencion(id: string): Promise<Atencion | null> {
   const res = await getClient().send(
     new GetCommand({ TableName: TABLE, Key: { pk: PK, sk: id } })
@@ -142,7 +169,7 @@ export async function recordRun(
       },
     ].slice(-MAX_RUNS)
 
-    const item: Atencion = {
+    const item = shrinkItem({
       pk: PK,
       sk: id,
       createdAt: existing?.createdAt ?? now,
@@ -155,7 +182,7 @@ export async function recordRun(
       lastDiagnostico: input.result.clinicalSections?.diagnostico ?? null,
       ...(existing?.validation ? { validation: existing.validation } : {}),
       ...(existing?.summary ? { summary: existing.summary } : {}),
-    }
+    })
     try {
       await getClient().send(
         new PutCommand({
