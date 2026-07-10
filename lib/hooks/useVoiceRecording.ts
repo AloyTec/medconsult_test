@@ -15,6 +15,8 @@ export function useVoiceRecording(options?: {
   getSttPrompt?: () => string | undefined
   getAtencionId?: () => string | undefined
   onNewDictation?: () => void
+  // transcript actual de la página (textarea) — fuente de verdad para seed/rotación
+  getTranscript?: () => string
 }) {
   // Keep the latest getters in refs so changes during recording are picked up.
   const getPromptRef = useRef(options?.getPrompt)
@@ -31,6 +33,8 @@ export function useVoiceRecording(options?: {
   getAtencionIdRef.current = options?.getAtencionId
   const onNewDictationRef = useRef(options?.onNewDictation)
   onNewDictationRef.current = options?.onNewDictation
+  const getTranscriptRef = useRef(options?.getTranscript)
+  getTranscriptRef.current = options?.getTranscript
   // Copia del transcript acumulado para sembrar el extractor al re-grabar.
   const fullTranscriptRef = useRef('')
 
@@ -59,9 +63,10 @@ export function useVoiceRecording(options?: {
     try {
       setState((prev) => ({ ...prev, error: null, isProcessing: true }))
 
-      // Dictar con el área vacía = atención nueva (spec trigger a); con texto,
-      // continúa la misma atención sembrando el buffer con lo ya dictado.
-      if (fullTranscriptRef.current.trim() === '') {
+      // La fuente de verdad es el textarea de la página (incluye texto pegado o
+      // editado a mano); fallback al acumulado del hook si la página no lo pasa.
+      const currentTranscript = (getTranscriptRef.current?.() ?? fullTranscriptRef.current).trim()
+      if (currentTranscript === '') {
         onNewDictationRef.current?.()
       }
 
@@ -79,7 +84,10 @@ export function useVoiceRecording(options?: {
         () => (getSttRef.current?.() === 'transcribe' ? 'transcribe' : 'openai-realtime'),
         (saved) => setState((prev) => ({ ...prev, saveWarn: !saved }))
       )
-      extractionRef.current.seed(fullTranscriptRef.current)
+      extractionRef.current.seed(currentTranscript)
+      // El hook continúa acumulando SOBRE el transcript actual, para que el
+      // textarea (efecto de sync) y el buffer persistido no diverjan.
+      fullTranscriptRef.current = currentTranscript
 
       const sttEngine = getSttRef.current?.() ?? 'openai'
       openaiRef.current =
@@ -128,6 +136,7 @@ export function useVoiceRecording(options?: {
         isRecording: true,
         isPaused: false,
         isProcessing: false,
+        fullTranscript: currentTranscript,
       }))
     } catch (error) {
       setState((prev) => ({

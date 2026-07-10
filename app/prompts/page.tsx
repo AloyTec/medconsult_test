@@ -265,6 +265,7 @@ export default function PromptPlaygroundPage() {
     getStt: () => stt,
     getSttPrompt: () => sttPrompt,
     getAtencionId: () => atencionId,
+    getTranscript: () => transcript,
     onNewDictation: () => {
       setAtencionId(ulid())
       setSaveWarn(false)
