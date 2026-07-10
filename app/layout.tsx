@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import './globals.css'
-import { LogoMark, IconSparkles } from './components/icons'
+import { LogoMark, IconSparkles, IconClipboardCheck } from './components/icons'
 import { NavLink } from './components/NavLink'
 import { ResetButton } from './components/ResetButton'
 
@@ -37,6 +37,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <nav className="flex items-center gap-2">
               <NavLink href="/prompts">
                 <IconSparkles className="h-4 w-4" /> Editor de prompts
+              </NavLink>
+              <NavLink href="/historial">
+                <IconClipboardCheck className="h-4 w-4" /> Historial
               </NavLink>
               <ResetButton />
             </nav>
