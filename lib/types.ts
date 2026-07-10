@@ -45,4 +45,5 @@ export interface RecordingState {
   isSubmitting: boolean
   submitResult: SubmitResult | null
   elapsedSeconds: number
+  saveWarn: boolean // última corrida de voz no se guardó en el historial
 }

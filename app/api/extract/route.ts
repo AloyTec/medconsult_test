@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { EXTRACTION_PROMPT, EXTRACTION_SCHEMA } from '@/lib/extraction-schema'
-import { invokeClaudeJson } from '@/lib/bedrock'
+import { invokeClaudeJson, getBedrockModelId } from '@/lib/bedrock'
+import { persistExtractRun } from '@/lib/persist-atencion'
+import type { ExtractedData } from '@/lib/types'
 
 // Exact JSON shape for the Bedrock lane. OpenAI enforces it via EXTRACTION_SCHEMA
 // (json_schema); Bedrock InvokeModel has no schema enforcement, so we spell it out.
@@ -13,7 +15,7 @@ const JSON_SHAPE = `Devuelve SOLO un objeto JSON con esta forma EXACTA (sin text
  * Matches Flutter's extractStructuredData() exactly.
  */
 export async function POST(req: NextRequest) {
-  const { transcript, prompt, engine, model } = await req.json()
+  const { transcript, prompt, engine, model, atencionId, stt } = await req.json()
 
   if (!transcript || typeof transcript !== 'string') {
     return NextResponse.json(
@@ -30,6 +32,12 @@ export async function POST(req: NextRequest) {
       ? prompt
       : EXTRACTION_PROMPT
 
+  // Header aditivo del historial: solo cuando el cliente mandó atencionId.
+  const savedHeaders = (saved: boolean | null): HeadersInit | undefined =>
+    saved === null ? undefined : { 'x-atencion-saved': String(saved) }
+  // Sistema de dictado que produjo el transcript (visibilidad del historial).
+  const sttUsed = typeof stt === 'string' && stt.trim().length > 0 ? stt : 'texto'
+
   // ── AWS Bedrock lane (Claude Haiku/Sonnet/Opus, IAM-scoped — no API key) ──
   if (engine === 'bedrock') {
     try {
@@ -43,7 +51,19 @@ export async function POST(req: NextRequest) {
         4096,
         bedrockModel
       )
-      return NextResponse.json(result)
+      const saved =
+        atencionId === undefined
+          ? null
+          : await persistExtractRun(atencionId, {
+              transcript,
+              stt: sttUsed,
+              // El string EXACTO que recibió el modelo (instrucciones + forma JSON).
+              prompt: `${instructions}\n\n${JSON_SHAPE}`,
+              engine: 'bedrock',
+              model: bedrockModel ?? getBedrockModelId(),
+              result: result as unknown as ExtractedData,
+            })
+      return NextResponse.json(result, { headers: savedHeaders(saved) })
     } catch (error) {
       console.error('Bedrock extraction error:', error)
       return NextResponse.json(
@@ -123,7 +143,19 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    return NextResponse.json(extracted)
+    const saved =
+      atencionId === undefined
+        ? null
+        : await persistExtractRun(atencionId, {
+            transcript,
+            stt: sttUsed,
+            // Carril OpenAI: el JSON se fuerza vía json_schema, no vía prompt.
+            prompt: instructions,
+            engine: 'openai',
+            model: openaiModel,
+            result: extracted as ExtractedData,
+          })
+    return NextResponse.json(extracted, { headers: savedHeaders(saved) })
   } catch (error) {
     console.error('Extraction error:', error)
     return NextResponse.json(

@@ -13,6 +13,10 @@ export function useVoiceRecording(options?: {
   getModel?: () => string | undefined
   getStt?: () => 'openai' | 'transcribe'
   getSttPrompt?: () => string | undefined
+  getAtencionId?: () => string | undefined
+  onNewDictation?: () => void
+  // transcript actual de la página (textarea) — fuente de verdad para seed/rotación
+  getTranscript?: () => string
 }) {
   // Keep the latest getters in refs so changes during recording are picked up.
   const getPromptRef = useRef(options?.getPrompt)
@@ -25,6 +29,14 @@ export function useVoiceRecording(options?: {
   getSttRef.current = options?.getStt
   const getSttPromptRef = useRef(options?.getSttPrompt)
   getSttPromptRef.current = options?.getSttPrompt
+  const getAtencionIdRef = useRef(options?.getAtencionId)
+  getAtencionIdRef.current = options?.getAtencionId
+  const onNewDictationRef = useRef(options?.onNewDictation)
+  onNewDictationRef.current = options?.onNewDictation
+  const getTranscriptRef = useRef(options?.getTranscript)
+  getTranscriptRef.current = options?.getTranscript
+  // Copia del transcript acumulado para sembrar el extractor al re-grabar.
+  const fullTranscriptRef = useRef('')
 
   const [state, setState] = useState<RecordingState>({
     isRecording: false,
@@ -39,6 +51,7 @@ export function useVoiceRecording(options?: {
     isSubmitting: false,
     submitResult: null,
     elapsedSeconds: 0,
+    saveWarn: false,
   })
 
   const openaiRef = useRef<OpenAIRealtimeClient | TranscribeStreamClient | null>(null)
@@ -50,6 +63,13 @@ export function useVoiceRecording(options?: {
     try {
       setState((prev) => ({ ...prev, error: null, isProcessing: true }))
 
+      // La fuente de verdad es el textarea de la página (incluye texto pegado o
+      // editado a mano); fallback al acumulado del hook si la página no lo pasa.
+      const currentTranscript = (getTranscriptRef.current?.() ?? fullTranscriptRef.current).trim()
+      if (currentTranscript === '') {
+        onNewDictationRef.current?.()
+      }
+
       extractionRef.current = new ClinicalExtractionService(
         (data) => {
           setState((prev) => ({ ...prev, extractedData: data }))
@@ -59,8 +79,15 @@ export function useVoiceRecording(options?: {
         },
         () => getPromptRef.current?.(),
         () => getEngineRef.current?.(),
-        () => getModelRef.current?.()
+        () => getModelRef.current?.(),
+        () => getAtencionIdRef.current?.(),
+        () => (getSttRef.current?.() === 'transcribe' ? 'transcribe' : 'openai-realtime'),
+        (saved) => setState((prev) => ({ ...prev, saveWarn: !saved }))
       )
+      extractionRef.current.seed(currentTranscript)
+      // El hook continúa acumulando SOBRE el transcript actual, para que el
+      // textarea (efecto de sync) y el buffer persistido no diverjan.
+      fullTranscriptRef.current = currentTranscript
 
       const sttEngine = getSttRef.current?.() ?? 'openai'
       openaiRef.current =
@@ -70,11 +97,11 @@ export function useVoiceRecording(options?: {
       const mediaStream = await openaiRef.current.connect(
         // onTranscript — fires when a complete turn is transcribed
         (text) => {
-          setState((prev) => ({
-            ...prev,
-            liveTranscript: '',
-            fullTranscript: (prev.fullTranscript + ' ' + text).trim(),
-          }))
+          setState((prev) => {
+            const fullTranscript = (prev.fullTranscript + ' ' + text).trim()
+            fullTranscriptRef.current = fullTranscript
+            return { ...prev, liveTranscript: '', fullTranscript }
+          })
           extractionRef.current?.addTranscript(text)
         },
         // onError
@@ -109,6 +136,7 @@ export function useVoiceRecording(options?: {
         isRecording: true,
         isPaused: false,
         isProcessing: false,
+        fullTranscript: currentTranscript,
       }))
     } catch (error) {
       setState((prev) => ({
@@ -133,6 +161,9 @@ export function useVoiceRecording(options?: {
     openaiRef.current?.disconnect()
     openaiRef.current = null
 
+    // Extrae lo pendiente del debounce para que la última corrida refleje el
+    // dictado completo, y recién entonces suelta los callbacks.
+    await extractionRef.current?.flush()
     extractionRef.current?.destroy()
     extractionRef.current = null
 
@@ -227,6 +258,7 @@ export function useVoiceRecording(options?: {
   }, [])
 
   const clear = useCallback(() => {
+    fullTranscriptRef.current = ''
     setState((prev) => ({
       ...prev,
       liveTranscript: '',
@@ -235,6 +267,7 @@ export function useVoiceRecording(options?: {
       isFinished: false,
       submitResult: null,
       elapsedSeconds: 0,
+      saveWarn: false,
     }))
   }, [])
 
