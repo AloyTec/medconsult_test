@@ -49,6 +49,29 @@ describe('scrubText', () => {
   it('handles null patient', () => {
     expect(scrubText('sin datos', null, P)).toBe('sin datos')
   })
+
+  it('does not corrupt words containing the name as substring', () => {
+    const out = scrubText(
+      'paciente refiere mareo intenso',
+      { ...PATIENT, name: 'Mar', lastName: null, document: null },
+      P
+    )
+    expect(out).toBe('paciente refiere mareo intenso')
+  })
+
+  it('replaces accented names at word boundaries (Unicode-aware)', () => {
+    const out = scrubText(
+      'la señora Muñoz consulta',
+      { ...PATIENT, name: 'Muñoz', lastName: null, document: null },
+      P
+    )
+    expect(out).toBe(`la señora ${P} consulta`)
+  })
+
+  it('collapses adjacent name+lastName into a single pseudonym', () => {
+    const out = scrubText('Juan Pérez con gastritis', PATIENT, P)
+    expect(out).toBe(`${P} con gastritis`)
+  })
 })
 
 describe('scrubExtractedData', () => {
