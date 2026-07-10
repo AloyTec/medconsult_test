@@ -36,6 +36,12 @@ describe('GET /api/atenciones', () => {
     expect(res.status).toBe(500)
     jest.restoreAllMocks()
   })
+
+  it('400s on a non-ULID cursor', async () => {
+    const res = await listGET(new NextRequest('http://localhost/api/atenciones?cursor=garbage'))
+    expect(res.status).toBe(400)
+    expect(listAtenciones).not.toHaveBeenCalled()
+  })
 })
 
 describe('GET /api/atenciones/[id]', () => {
