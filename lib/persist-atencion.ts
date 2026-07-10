@@ -46,7 +46,9 @@ export async function persistExtractRun(
     })
     return true
   } catch (err) {
-    logFail('persistExtractRun', atencionId, err, { transcriptLength: input.transcript.length })
+    logFail('persistExtractRun', atencionId, err, {
+      transcriptLength: input.transcript?.length ?? 0,
+    })
     return false
   }
 }

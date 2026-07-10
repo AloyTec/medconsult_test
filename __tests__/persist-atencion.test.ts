@@ -69,6 +69,12 @@ describe('persistExtractRun', () => {
     expect(logged).not.toContain('Juan') // nunca contenido clínico en logs
     expect(logged).toContain('ddb down')
   })
+
+  it('resolves false (never throws) even when transcript is malformed/undefined', async () => {
+    await expect(
+      persistExtractRun(ID, { ...INPUT, transcript: undefined as unknown as string })
+    ).resolves.toBe(false)
+  })
 })
 
 describe('persistValidation', () => {
