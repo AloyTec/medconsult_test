@@ -13,6 +13,8 @@ export function useVoiceRecording(options?: {
   getModel?: () => string | undefined
   getStt?: () => 'openai' | 'transcribe'
   getSttPrompt?: () => string | undefined
+  getAtencionId?: () => string | undefined
+  onNewDictation?: () => void
 }) {
   // Keep the latest getters in refs so changes during recording are picked up.
   const getPromptRef = useRef(options?.getPrompt)
@@ -25,6 +27,12 @@ export function useVoiceRecording(options?: {
   getSttRef.current = options?.getStt
   const getSttPromptRef = useRef(options?.getSttPrompt)
   getSttPromptRef.current = options?.getSttPrompt
+  const getAtencionIdRef = useRef(options?.getAtencionId)
+  getAtencionIdRef.current = options?.getAtencionId
+  const onNewDictationRef = useRef(options?.onNewDictation)
+  onNewDictationRef.current = options?.onNewDictation
+  // Copia del transcript acumulado para sembrar el extractor al re-grabar.
+  const fullTranscriptRef = useRef('')
 
   const [state, setState] = useState<RecordingState>({
     isRecording: false,
@@ -39,6 +47,7 @@ export function useVoiceRecording(options?: {
     isSubmitting: false,
     submitResult: null,
     elapsedSeconds: 0,
+    saveWarn: false,
   })
 
   const openaiRef = useRef<OpenAIRealtimeClient | TranscribeStreamClient | null>(null)
@@ -50,6 +59,12 @@ export function useVoiceRecording(options?: {
     try {
       setState((prev) => ({ ...prev, error: null, isProcessing: true }))
 
+      // Dictar con el área vacía = atención nueva (spec trigger a); con texto,
+      // continúa la misma atención sembrando el buffer con lo ya dictado.
+      if (fullTranscriptRef.current.trim() === '') {
+        onNewDictationRef.current?.()
+      }
+
       extractionRef.current = new ClinicalExtractionService(
         (data) => {
           setState((prev) => ({ ...prev, extractedData: data }))
@@ -59,8 +74,12 @@ export function useVoiceRecording(options?: {
         },
         () => getPromptRef.current?.(),
         () => getEngineRef.current?.(),
-        () => getModelRef.current?.()
+        () => getModelRef.current?.(),
+        () => getAtencionIdRef.current?.(),
+        () => (getSttRef.current?.() === 'transcribe' ? 'transcribe' : 'openai-realtime'),
+        (saved) => setState((prev) => ({ ...prev, saveWarn: !saved }))
       )
+      extractionRef.current.seed(fullTranscriptRef.current)
 
       const sttEngine = getSttRef.current?.() ?? 'openai'
       openaiRef.current =
@@ -70,11 +89,11 @@ export function useVoiceRecording(options?: {
       const mediaStream = await openaiRef.current.connect(
         // onTranscript — fires when a complete turn is transcribed
         (text) => {
-          setState((prev) => ({
-            ...prev,
-            liveTranscript: '',
-            fullTranscript: (prev.fullTranscript + ' ' + text).trim(),
-          }))
+          setState((prev) => {
+            const fullTranscript = (prev.fullTranscript + ' ' + text).trim()
+            fullTranscriptRef.current = fullTranscript
+            return { ...prev, liveTranscript: '', fullTranscript }
+          })
           extractionRef.current?.addTranscript(text)
         },
         // onError
@@ -133,6 +152,9 @@ export function useVoiceRecording(options?: {
     openaiRef.current?.disconnect()
     openaiRef.current = null
 
+    // Extrae lo pendiente del debounce para que la última corrida refleje el
+    // dictado completo, y recién entonces suelta los callbacks.
+    await extractionRef.current?.flush()
     extractionRef.current?.destroy()
     extractionRef.current = null
 
@@ -227,6 +249,7 @@ export function useVoiceRecording(options?: {
   }, [])
 
   const clear = useCallback(() => {
+    fullTranscriptRef.current = ''
     setState((prev) => ({
       ...prev,
       liveTranscript: '',
@@ -235,6 +258,7 @@ export function useVoiceRecording(options?: {
       isFinished: false,
       submitResult: null,
       elapsedSeconds: 0,
+      saveWarn: false,
     }))
   }, [])
 

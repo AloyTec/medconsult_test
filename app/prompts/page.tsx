@@ -7,6 +7,7 @@ import { CONSISTENCY_PROMPT, SUMMARIZE_PROMPT } from '@/lib/prompts'
 import { DEFAULT_STT_PROMPT } from '@/lib/stt-vocabulary'
 import type { ExtractedData } from '@/lib/types'
 import { useVoiceRecording } from '@/lib/hooks/useVoiceRecording'
+import { ulid } from '@/lib/ulid'
 
 interface PromptVersion {
   version: number
@@ -109,6 +110,12 @@ export default function PromptPlaygroundPage() {
   const currentDefault = DEFAULT_PROMPTS[promptKey]
   const activeTab = PROMPT_TABS.find((t) => t.key === promptKey)!
   const [transcript, setTranscript] = useState('')
+  // Una atención por sesión de dictado: nueva al cargar la página (Empezar de
+  // cero recarga), al elegir un ejemplo y al dictar con el área vacía.
+  const [atencionId, setAtencionId] = useState(() => ulid())
+  const [saveWarn, setSaveWarn] = useState(false)
+  // Origen del transcript actual → columna STT del historial.
+  const [transcriptOrigin, setTranscriptOrigin] = useState('texto')
   const [result, setResult] = useState<ExtractedData | null>(null)
   const [isExtracting, setIsExtracting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -257,6 +264,11 @@ export default function PromptPlaygroundPage() {
     getModel: () => activeModel,
     getStt: () => stt,
     getSttPrompt: () => sttPrompt,
+    getAtencionId: () => atencionId,
+    onNewDictation: () => {
+      setAtencionId(ulid())
+      setSaveWarn(false)
+    },
   })
   const recording = voice.state.isRecording
 
@@ -267,8 +279,9 @@ export default function PromptPlaygroundPage() {
   useEffect(() => {
     if (voice.state.isRecording) {
       setTranscript((voice.state.fullTranscript + ' ' + voice.state.liveTranscript).trim())
+      setTranscriptOrigin(stt === 'transcribe' ? 'transcribe' : 'openai-realtime')
     }
-  }, [voice.state.fullTranscript, voice.state.liveTranscript, voice.state.isRecording])
+  }, [voice.state.fullTranscript, voice.state.liveTranscript, voice.state.isRecording, stt])
 
   async function runExtraction() {
     if (!transcript.trim()) {
@@ -287,6 +300,8 @@ export default function PromptPlaygroundPage() {
           prompt: prompts.extraction,
           engine,
           model: activeModel,
+          atencionId,
+          stt: transcriptOrigin,
         }),
       })
       const data = await res.json()
@@ -294,6 +309,7 @@ export default function PromptPlaygroundPage() {
         setError(data?.error ?? `La extracción falló (${res.status}).`)
         return
       }
+      setSaveWarn(res.headers.get('x-atencion-saved') === 'false')
       setResult(data as ExtractedData)
       setLatencyMs(Math.round(performance.now() - startedAt))
       // Los resultados de validación/resumen quedan obsoletos al re-extraer.
@@ -318,13 +334,20 @@ export default function PromptPlaygroundPage() {
       const res = await fetch('/api/validate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: result, prompt: prompts.consistency, engine, model: activeModel }),
+        body: JSON.stringify({
+          data: result,
+          prompt: prompts.consistency,
+          engine,
+          model: activeModel,
+          atencionId,
+        }),
       })
       const data = await res.json()
       if (!res.ok) {
         setError(data?.error ?? `La validación falló (${res.status}).`)
         return
       }
+      setSaveWarn(res.headers.get('x-atencion-saved') === 'false')
       setValidation({ consistent: data.consistent === true, observations: data.observations ?? '' })
       setValMs(Math.round(performance.now() - startedAt))
     } catch {
@@ -346,13 +369,20 @@ export default function PromptPlaygroundPage() {
       const res = await fetch('/api/summarize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: result, prompt: prompts.summarize, engine, model: activeModel }),
+        body: JSON.stringify({
+          data: result,
+          prompt: prompts.summarize,
+          engine,
+          model: activeModel,
+          atencionId,
+        }),
       })
       const data = await res.json()
       if (!res.ok) {
         setError(data?.error ?? `El resumen falló (${res.status}).`)
         return
       }
+      setSaveWarn(res.headers.get('x-atencion-saved') === 'false')
       setSummary(data as Record<string, string>)
       setSumMs(Math.round(performance.now() - startedAt))
     } catch {
@@ -594,7 +624,12 @@ export default function PromptPlaygroundPage() {
                 <button
                   key={s.label}
                   type="button"
-                  onClick={() => setTranscript(s.text)}
+                  onClick={() => {
+                    setTranscript(s.text)
+                    setAtencionId(ulid())
+                    setTranscriptOrigin('texto')
+                    setSaveWarn(false)
+                  }}
                   className="rounded-full border border-stroke px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-soft-blue hover:bg-surface hover:text-primary"
                 >
                   {s.label}
@@ -788,6 +823,11 @@ export default function PromptPlaygroundPage() {
                 className="rounded-lg bg-danger-surface px-3 py-2 text-sm text-danger"
               >
                 {error ?? voice.state.error}
+              </p>
+            )}
+            {(saveWarn || voice.state.saveWarn) && (
+              <p className="text-xs font-medium text-muted">
+                ⚠ La última corrida no se guardó en el historial (la consulta sigue funcionando).
               </p>
             )}
           </section>

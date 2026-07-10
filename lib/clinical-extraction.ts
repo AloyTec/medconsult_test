@@ -15,19 +15,48 @@ export class ClinicalExtractionService {
   private getPrompt: (() => string | undefined) | null = null
   private getEngine: (() => string | undefined) | null = null
   private getModel: (() => string | undefined) | null = null
+  private getAtencionId: (() => string | undefined) | null = null
+  private getSttEngine: (() => string | undefined) | null = null
+  private onSaveStatus: ((saved: boolean) => void) | null = null
 
   constructor(
     onExtracted: (data: ExtractedData) => void,
     onExtracting: (isExtracting: boolean) => void,
     getPrompt?: () => string | undefined,
     getEngine?: () => string | undefined,
-    getModel?: () => string | undefined
+    getModel?: () => string | undefined,
+    getAtencionId?: () => string | undefined,
+    getSttEngine?: () => string | undefined,
+    onSaveStatus?: (saved: boolean) => void
   ) {
     this.onExtracted = onExtracted
     this.onExtracting = onExtracting
     this.getPrompt = getPrompt ?? null
     this.getEngine = getEngine ?? null
     this.getModel = getModel ?? null
+    this.getAtencionId = getAtencionId ?? null
+    this.getSttEngine = getSttEngine ?? null
+    this.onSaveStatus = onSaveStatus ?? null
+  }
+
+  /**
+   * Siembra el buffer con el transcript ya acumulado en la página: dictar de nuevo
+   * CONTINÚA la misma atención y el transcript persistido no pierde lo anterior.
+   */
+  seed(text: string): void {
+    this.buffer = text.trim()
+  }
+
+  /**
+   * Dispara YA la extracción pendiente del debounce (se llama al detener la
+   * grabación) — sin esto, lo dictado en los últimos 2s nunca se extrae ni persiste.
+   */
+  flush(): Promise<void> {
+    if (this.debounceTimer) {
+      clearTimeout(this.debounceTimer)
+      this.debounceTimer = null
+    }
+    return this.extract()
   }
 
   /**
@@ -50,7 +79,7 @@ export class ClinicalExtractionService {
   /**
    * Call the extraction API with the accumulated buffer.
    */
-  private async extract(): Promise<void> {
+  async extract(): Promise<void> {
     if (!this.buffer.trim()) return
 
     const currentJobId = ++this.jobId
@@ -65,6 +94,10 @@ export class ClinicalExtractionService {
     if (prompt && prompt.trim().length > 0) payload.prompt = prompt
     if (engine) payload.engine = engine
     if (model) payload.model = model
+    const atencionId = this.getAtencionId?.()
+    if (atencionId) payload.atencionId = atencionId
+    const stt = this.getSttEngine?.()
+    if (stt) payload.stt = stt
 
     try {
       const response = await fetch('/api/extract', {
@@ -80,6 +113,9 @@ export class ClinicalExtractionService {
         console.error('Extraction failed:', response.status)
         return
       }
+
+      const savedHeader = response.headers.get('x-atencion-saved')
+      if (savedHeader !== null) this.onSaveStatus?.(savedHeader === 'true')
 
       const data: ExtractedData = await response.json()
       this.onExtracted?.(data)
@@ -109,5 +145,6 @@ export class ClinicalExtractionService {
     }
     this.onExtracted = null
     this.onExtracting = null
+    this.onSaveStatus = null
   }
 }
