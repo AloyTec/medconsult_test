@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { CONSISTENCY_PROMPT } from '@/lib/prompts'
 import { buildSections, callOpenAIJson } from '@/lib/server-openai'
-import { invokeClaudeJson } from '@/lib/bedrock'
+import { invokeClaudeJson, getBedrockModelId } from '@/lib/bedrock'
+import { persistValidation } from '@/lib/persist-atencion'
 import type { ExtractedData } from '@/lib/types'
 
 const SYSTEM =
@@ -21,11 +22,12 @@ function withData(prompt: string, consultationData: string): string {
  */
 export async function POST(req: NextRequest) {
   try {
-    const { data, prompt, engine, model } = (await req.json()) as {
+    const { data, prompt, engine, model, atencionId } = (await req.json()) as {
       data: ExtractedData
       prompt?: string
       engine?: string
       model?: string
+      atencionId?: string
     }
     if (!data?.clinicalSections) {
       return NextResponse.json({ error: 'Falta "data" con clinicalSections.' }, { status: 400 })
@@ -49,9 +51,22 @@ export async function POST(req: NextRequest) {
         ? await invokeClaudeJson(SYSTEM, userPrompt, 1024, useModel)
         : await callOpenAIJson(SYSTEM, userPrompt, 1024, useModel)
 
-    return NextResponse.json({
+    const payload = {
       consistent: result.consistent === true,
       observations: (result.observations as string) || '',
+    }
+    const saved =
+      atencionId === undefined
+        ? null
+        : await persistValidation(atencionId, data.patient, payload, {
+            // La plantilla editable (con $CONSULTATION_DATA): los datos inyectados ya
+            // son visibles como extracción en el mismo registro — no se duplican.
+            prompt: instructions,
+            engine: engine === 'bedrock' ? 'bedrock' : 'openai',
+            model: useModel ?? (engine === 'bedrock' ? getBedrockModelId() : 'gpt-4o-mini'),
+          })
+    return NextResponse.json(payload, {
+      ...(saved === null ? {} : { headers: { 'x-atencion-saved': String(saved) } }),
     })
   } catch (error) {
     console.error('Validate error:', error)
