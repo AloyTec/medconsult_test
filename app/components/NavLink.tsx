@@ -13,7 +13,7 @@ export function NavLink({ href, children }: { href: string; children: ReactNode 
     <Link
       href={href}
       aria-current={active ? 'page' : undefined}
-      className={`inline-flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-semibold transition-colors ${
+      className={`inline-flex h-10 max-sm:h-11 items-center gap-2 rounded-lg px-3 text-sm font-semibold transition-colors ${
         active
           ? 'bg-surface text-primary'
           : 'text-muted hover:bg-surface/60 hover:text-primary'

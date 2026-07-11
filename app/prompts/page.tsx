@@ -487,7 +487,9 @@ export default function PromptPlaygroundPage() {
                 </button>
               ))}
             </div>
-            <div className="flex items-center justify-between gap-3">
+            {/* En teléfono las acciones (Ver versiones/Restaurar/Guardar) bajan a su
+                propia línea — la fila no cabe en 375px; desde sm queda igual. */}
+            <div className="flex items-center justify-between gap-3 max-sm:flex-wrap">
               <div className="flex items-center gap-2">
                 <IconSparkles className="h-5 w-5 text-soft-blue" />
                 <h2 className="text-base font-semibold text-ink">Prompt de {activeTab.label.toLowerCase()}</h2>
