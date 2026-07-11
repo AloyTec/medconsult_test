@@ -24,22 +24,27 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="min-h-dvh">
         <header className="sticky top-0 z-20 border-b border-stroke bg-white/85 backdrop-blur">
-          <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
+          {/* Responsive aditivo: en teléfono la nav es icono-solo y el subtítulo se
+              oculta (el min-content del header superaba 375px y empujaba toda la
+              página); desde sm el header queda idéntico al diseño aprobado. */}
+          <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-3 sm:gap-4">
             <Link href="/prompts" className="flex items-center gap-2.5">
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-surface text-primary">
                 <LogoMark className="h-5 w-5" />
               </span>
               <span className="leading-tight">
                 <span className="block text-base font-bold text-primary">MedConsult</span>
-                <span className="block text-[11px] text-muted">Estudio de prompts clínicos</span>
+                <span className="hidden text-[11px] text-muted sm:block">Estudio de prompts clínicos</span>
               </span>
             </Link>
             <nav className="flex items-center gap-2">
               <NavLink href="/prompts">
-                <IconSparkles className="h-4 w-4" /> Editor de prompts
+                <IconSparkles className="h-4 w-4" />
+                <span className="sr-only sm:not-sr-only">Editor de prompts</span>
               </NavLink>
               <NavLink href="/historial">
-                <IconClipboardCheck className="h-4 w-4" /> Historial
+                <IconClipboardCheck className="h-4 w-4" />
+                <span className="sr-only sm:not-sr-only">Historial</span>
               </NavLink>
               <ResetButton />
             </nav>
